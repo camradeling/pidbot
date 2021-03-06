@@ -1,0 +1,3 @@
+[submodule "altium_libs"]
+	path = altium_libs
+	url = https://github.com/voodoojah/altium_libs.git

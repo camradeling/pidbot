@@ -55,7 +55,7 @@ GenerateClassCluster=0
 DocumentUniqueId=NUVHEQVI
 
 [Document2]
-DocumentPath=pidbot.OutJob
+DocumentPath=..\..\pidbot\schematics\pidbot.OutJob
 AnnotationEnabled=1
 AnnotateStartValue=1
 AnnotationIndexControlEnabled=0
@@ -72,7 +72,7 @@ GenerateClassCluster=0
 DocumentUniqueId=
 
 [Document3]
-DocumentPath=pidbot.PcbDoc
+DocumentPath=..\..\pidbot\schematics\pidbot.PcbDoc
 AnnotationEnabled=1
 AnnotateStartValue=1
 AnnotationIndexControlEnabled=0
@@ -86,10 +86,27 @@ ClassGenCCAutoRoomEnabled=1
 ClassGenNCAutoScope=None
 DItemRevisionGUID=
 GenerateClassCluster=0
-DocumentUniqueId=
+DocumentUniqueId=AWQMJGBT
 
 [Document4]
-DocumentPath=pidbot.SchDoc
+DocumentPath=..\..\pidbot\schematics\pidbot.SchDoc
+AnnotationEnabled=1
+AnnotateStartValue=1
+AnnotationIndexControlEnabled=0
+AnnotateSuffix=
+AnnotateScope=All
+AnnotateOrder=0
+DoLibraryUpdate=1
+DoDatabaseUpdate=1
+ClassGenCCAutoEnabled=1
+ClassGenCCAutoRoomEnabled=1
+ClassGenNCAutoScope=None
+DItemRevisionGUID=
+GenerateClassCluster=0
+DocumentUniqueId=NDHMJRHT
+
+[Document5]
+DocumentPath=..\..\pidbot\schematics\pidbot.PcbLib
 AnnotationEnabled=1
 AnnotateStartValue=1
 AnnotationIndexControlEnabled=0
@@ -103,7 +120,11 @@ ClassGenCCAutoRoomEnabled=1
 ClassGenNCAutoScope=None
 DItemRevisionGUID=
 GenerateClassCluster=0
-DocumentUniqueId=
+DocumentUniqueId=MITBCLCV
+
+[GeneratedDocument1]
+DocumentPath=Project Outputs for pidbot\Design Rule Check - pidbot.html
+DItemRevisionGUID=
 
 [Configuration1]
 Name=Sources

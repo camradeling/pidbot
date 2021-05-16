@@ -55,7 +55,7 @@ GenerateClassCluster=0
 DocumentUniqueId=NUVHEQVI
 
 [Document2]
-DocumentPath=..\..\pidbot\schematics\pidbot.OutJob
+DocumentPath=pidbot.OutJob
 AnnotationEnabled=1
 AnnotateStartValue=1
 AnnotationIndexControlEnabled=0
@@ -72,7 +72,7 @@ GenerateClassCluster=0
 DocumentUniqueId=
 
 [Document3]
-DocumentPath=..\..\pidbot\schematics\pidbot.PcbDoc
+DocumentPath=pidbot.PcbDoc
 AnnotationEnabled=1
 AnnotateStartValue=1
 AnnotationIndexControlEnabled=0
@@ -89,7 +89,7 @@ GenerateClassCluster=0
 DocumentUniqueId=AWQMJGBT
 
 [Document4]
-DocumentPath=..\..\pidbot\schematics\pidbot.SchDoc
+DocumentPath=pidbot.SchDoc
 AnnotationEnabled=1
 AnnotateStartValue=1
 AnnotationIndexControlEnabled=0
@@ -106,7 +106,7 @@ GenerateClassCluster=0
 DocumentUniqueId=NDHMJRHT
 
 [Document5]
-DocumentPath=..\..\pidbot\schematics\pidbot.PcbLib
+DocumentPath=pidbot.PcbLib
 AnnotationEnabled=1
 AnnotateStartValue=1
 AnnotationIndexControlEnabled=0

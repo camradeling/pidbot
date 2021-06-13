@@ -20,16 +20,4 @@ extern uint8_t Com1RxWriteInd;
 extern uint8_t Com1TxReadInd;
 extern uint8_t Com1TxWriteInd;
 //------------------------------------------------------------------------------
-extern uint8_t I2C1State;
-extern uint8_t I2C1TransferStatus;
-extern uint8_t i2cAddr;
-extern uint8_t conversions;
-extern uint8_t ADS1115_DIFSIG_Config_Buf[];
-extern uint8_t ADS1115_REF_Config_Buf[];
-extern uint8_t ADS_READ_Buf[];
-//------------------------------------------------------------------------------
-extern uint16_t flashParams[];
-extern uint8_t flashBuf[];
-extern uint16_t defaultParams[];
-//------------------------------------------------------------------------------
 #endif/*EXTERNS_H*/

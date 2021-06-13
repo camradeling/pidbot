@@ -99,12 +99,10 @@ void RCC_IRQHandler(void)
 //------------------------------------------------------------------------------
 void EXTI0_IRQHandler(void)
 {
-
 }
 //------------------------------------------------------------------------------
 void EXTI1_IRQHandler(void)
 {
-
 }
 //------------------------------------------------------------------------------
 void EXTI2_IRQHandler(void)
@@ -139,43 +137,12 @@ void DMAChannel3_IRQHandler(void)
 {
 }*/
 //------------------------------------------------------------------------------
-//extern uint8_t i2cDMAflag;
 void DMAChannel6_IRQHandler(void)
 {
-  /*if(DMA1->ISR & DMA_ISR_TCIF6)
-  {
-    i2cDMAflag = 0;
-    DMA_Channel_TypeDef* Chan = (DMA_Channel_TypeDef*)DMA1_Channel6_BASE;
-    Chan->CCR &=~ (DMA_CCR6_EN| DMA_CCR6_TCIE);
-    DMA1->IFCR |= DMA_IFCR_CTCIF6 | DMA_IFCR_CTEIF6 | DMA_IFCR_CHTIF6;
-  }
-  else if(DMA1->ISR & DMA_ISR_TEIF6)
-  {
-    DMA1->IFCR |= DMA_IFCR_CTEIF6;
-  }
-  else if(DMA1->ISR & DMA_ISR_HTIF6)
-  {
-    DMA1->IFCR |= DMA_IFCR_CHTIF6;
-  }*/
 }
 //------------------------------------------------------------------------------
 void DMAChannel7_IRQHandler(void)
 {
-  /*if(DMA1->ISR & DMA_ISR_TCIF7)
-  {
-    i2cDMAflag = 0;
-    DMA_Channel_TypeDef* Chan = (DMA_Channel_TypeDef*)DMA1_Channel7_BASE;
-    Chan->CCR &=~ (DMA_CCR7_EN | DMA_CCR7_TCIE);
-    DMA1->IFCR |= DMA_IFCR_CTCIF7 | DMA_IFCR_CTEIF7 | DMA_IFCR_CHTIF7;
-  }
-  else if(DMA1->ISR & DMA_ISR_TEIF7)
-  {
-    DMA1->IFCR |= DMA_IFCR_CTEIF7;
-  }
-  else if(DMA1->ISR & DMA_ISR_HTIF7)
-  {
-    DMA1->IFCR |= DMA_IFCR_CHTIF7;
-  }*/
 }
 //------------------------------------------------------------------------------
 void ADC_IRQHandler(void)

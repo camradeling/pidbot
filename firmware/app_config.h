@@ -47,7 +47,6 @@
 #define INIT_COM_TIMER_PRESCALER BAUDRATE_115200_TIMER_PRESCALER
 #define INIT_COM_TIMER_CLOCK_DIVIDER BAUDRATE_115200_TIMER_CLOCK_DIVIDER
 #define comSTACK_SIZE				configMINIMAL_STACK_SIZE +1000
-#define TXRX_BUFFER_SIZE 256
 //------------------------------------------------------------------------------
 #define CMD_WRITE_FLASH_PARAMETERS_BACKUP               5607
 #define CMD_REWRITE_FLASH                               5608

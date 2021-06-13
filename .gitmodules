@@ -1,3 +1,9 @@
 [submodule "altium_libs"]
 	path = altium_libs
 	url = https://github.com/voodoojah/altium_libs.git
+[submodule "firmware/FreeRTOS-Kernel"]
+	path = firmware/FreeRTOS-Kernel
+	url = git@github.com:FreeRTOS/FreeRTOS-Kernel.git
+[submodule "firmware/Libraries/modbuslib"]
+	path = firmware/Libraries/modbuslib
+	url = git@github.com:voodoojah/modbuslib.git

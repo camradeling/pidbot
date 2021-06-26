@@ -8,7 +8,7 @@
 #define BAUDRATE_115200_TIMER_PRESCALER 0
 #define BAUDRATE_115200_TIMER_CLOCK_DIVIDER TIM_CKD_DIV1
 //------------------------------------------------------------------------------
-#define MAX_COM_QUEUE_LENGTH                            4
+#define MAX_COM_QUEUE_LENGTH                            2
 //------------------------------------------------------------------------------
 void DMA_USART_prepare_transmit(uint8_t length);
 //------------------------------------------------------------------------------

@@ -36,7 +36,7 @@ set(Sources
         ${FreeRTOSSources}
         ${PeripheralSources}
         )
-add_executable(${PROJECT_NAME} ${Sources})
+
 
 set(CROSS_PATH /home/$ENV{USER}/x-tools/arm-unknown-eabi/bin)
 set(CMAKE_CXX_COMPILER ${CROSS_PATH}/arm-unknown-eabi-g++)
@@ -47,20 +47,30 @@ set(CMAKE_OBJCOPY ${CROSS_PATH}/arm-unknown-eabi-objcopy)
 set(LINKER_SCRIPT stm32f103md2.ld)
 #set_target_properties(${PROJECT_NAME} PROPERTIES LINK_DEPENDS ${LINKER_SCRIPT})
 set(CMAKE_EXE_LINKER_FLAGS "-T ${PROJECT_SOURCE_DIR}/${LINKER_SCRIPT}")
-set(CMAKE_C_FLAGS "-mcpu=cortex-m3 -mthumb -mno-thumb-interwork -mfpu=vfp -msoft-float -mfix-cortex-m3-ldrd -nostdlib -Wl,-Map,output.map")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-Map=${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map -Wl,--gc-sections")
+set(CMAKE_C_FLAGS "-mcpu=cortex-m3 -mthumb -mno-thumb-interwork -mfpu=vfp -msoft-float -mfix-cortex-m3-ldrd -nostdlib -fdata-sections -ffunction-sections")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2 -s")
 
-target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR})
-target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/Libraries/modbuslib)
-target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/FreeRTOS-Kernel/include)
-target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/FreeRTOS-Kernel/portable/GCC/ARM_CM3)
-target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/Libraries/STM32F10x_StdPeriph_Driver/inc)
-target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/Libraries/CMSIS/Device/ST/STM32F10x/Include)
-target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/Libraries/CMSIS/Include)
+add_executable(${PROJECT_NAME}.elf ${Sources} ${LINKER_SCRIPT})
+
+target_include_directories(${PROJECT_NAME}.elf PUBLIC ${PROJECT_SOURCE_DIR})
+target_include_directories(${PROJECT_NAME}.elf PUBLIC ${PROJECT_SOURCE_DIR}/Libraries/modbuslib)
+target_include_directories(${PROJECT_NAME}.elf PUBLIC ${PROJECT_SOURCE_DIR}/FreeRTOS-Kernel/include)
+target_include_directories(${PROJECT_NAME}.elf PUBLIC ${PROJECT_SOURCE_DIR}/FreeRTOS-Kernel/portable/GCC/ARM_CM3)
+target_include_directories(${PROJECT_NAME}.elf PUBLIC ${PROJECT_SOURCE_DIR}/Libraries/STM32F10x_StdPeriph_Driver/inc)
+target_include_directories(${PROJECT_NAME}.elf PUBLIC ${PROJECT_SOURCE_DIR}/Libraries/CMSIS/Device/ST/STM32F10x/Include)
+target_include_directories(${PROJECT_NAME}.elf PUBLIC ${PROJECT_SOURCE_DIR}/Libraries/CMSIS/Include)
 
 add_definitions(-DSTM32F10X_MD)
 add_definitions(-DDEBUG)
 
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_OBJCOPY} -O ihex ${PROJECT_NAME} ${PROJECT_NAME}.hex
-        COMMAND ${CMAKE_OBJCOPY} -O binary ${PROJECT_NAME} ${PROJECT_NAME}.bin
+add_custom_command(TARGET ${PROJECT_NAME}.elf POST_BUILD
+        COMMAND ${CMAKE_OBJCOPY} -O ihex ${PROJECT_NAME}.elf ${PROJECT_NAME}.hex
+        COMMAND ${CMAKE_OBJCOPY} -O binary ${PROJECT_NAME}.elf ${PROJECT_NAME}.bin
+        COMMAND ${CMAKE_SOURCE_DIR}/usage.sh ${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map
         )
+
+add_custom_target(USAGE
+        ${CMAKE_SOURCE_DIR}/usage.sh ${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map)
+
+add_dependencies(${PROJECT_NAME}.elf USAGE)        

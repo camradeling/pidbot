@@ -101,7 +101,7 @@ SECTIONS
     KEEP (*(SORT(.fini_array.*)))
     PROVIDE_HIDDEN (__fini_array_end = .);
   } >FLASH
-
+  _FLASHEND = .;
   /* used by the startup to initialize data */
   _sidata = .;
 
@@ -116,7 +116,7 @@ SECTIONS
     . = ALIGN(4);
     _edata = .;        /* define a global symbol at data end */
   } >RAM
-
+  _INITDATAEND = .;
   /* Uninitialized data section */
   . = ALIGN(4);
   .bss :
@@ -144,7 +144,7 @@ SECTIONS
     . = . + _Min_Stack_Size;
     . = ALIGN(4);
   } >RAM
-
+  _RAMEND = .;
   /* MEMORY_bank1 section, code must be located here explicitly            */
   /* Example: extern int foo(void) __attribute__ ((section (".mb1text"))); */
   .memory_b1_text :

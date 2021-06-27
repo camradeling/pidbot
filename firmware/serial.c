@@ -151,9 +151,11 @@ void vPacketsManagerTask (void *pvParameters)
   DMA_USART_prepare_recieve();
   for(;;)
   {
+    SET_PIN_HIGH(COIL2_PORT,COIL2);
     xSemaphoreTake(Com1RxSemaphore, portMAX_DELAY );
     if(Com1RxReadInd != Com1RxWriteInd)
     {
+      SET_PIN_HIGH(COIL1_PORT,COIL1);
       Com1RxReadInd++;
       if(Com1RxReadInd >= MAX_COM_QUEUE_LENGTH)
         Com1RxReadInd = 0;
@@ -171,6 +173,7 @@ void vPacketsManagerTask (void *pvParameters)
     {
       if(!transmitActive)
       {
+
         Com1TxReadInd++;
         if(Com1TxReadInd >= MAX_COM_QUEUE_LENGTH)
           Com1TxReadInd = 0;

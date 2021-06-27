@@ -20,4 +20,7 @@ extern uint8_t Com1RxWriteInd;
 extern uint8_t Com1TxReadInd;
 extern uint8_t Com1TxWriteInd;
 //------------------------------------------------------------------------------
+extern int write_flash(uint32_t addr, uint8_t* data, int len, int erase);
+extern int flash_erase(uint32_t addr);
+//------------------------------------------------------------------------------
 #endif/*EXTERNS_H*/

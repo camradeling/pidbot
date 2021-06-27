@@ -15,8 +15,8 @@ void Reset_Handler(void)
   //
   // Copy the data segment initializers from flash to SRAM.
   //
-  pulSrc = &_sidata;
-  for(pulDest = &_sdata; pulDest < &_edata; )
+  pulSrc = (unsigned long *)&_sidata;
+  for(pulDest = (unsigned long *)&_sdata; pulDest < (unsigned long *)&_edata; )
   {
     *(pulDest++) = *(pulSrc++);
   }
@@ -24,7 +24,7 @@ void Reset_Handler(void)
   //
   // Zero fill the bss segment.
   //
-  for(pulDest = &_sbss; pulDest < &_ebss; )
+  for(pulDest = (unsigned long *)&_sbss; pulDest < (unsigned long *)&_ebss; )
   {
     *(pulDest++) = 0;
   }

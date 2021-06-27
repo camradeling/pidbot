@@ -1,4 +1,5 @@
 #include "includes.h"
+#include "tusb.h"
 //------------------------------------------------------------------------------
 /*Configure the clocks, GPIO and other peripherals */
 static void prvSetupHardware( void );
@@ -9,20 +10,21 @@ static void vInoutsTask (void *pvParameters);
 //------------------------------------------------------------------------------
 void vApplicationTickHook( void );
 //------------------------------------------------------------------------------
-
+extern int write_eeprom();
+extern int init_eeprom();
 //------------------------------------------------------------------------------
 int main( void )
 {
-/*#ifdef DEBUG
-  debug();
-#endif*/
   prvSetupHardware();
-  //SET_PIN_HIGH(GPIOB,5);
+
+  //MODBUS_HR[MBHR_REG_MY_MBADDR] = 1;
+  //MODBUS_HR[MBHR_TEST_VALUE] = 5;
+  //write_eeprom();
+  //init_eeprom();
+  tusb_init();
   Com1RxSemaphore = xSemaphoreCreateCounting(MAX_COM_QUEUE_LENGTH, 0);
   xTaskCreate(vPacketsManagerTask, "Packets_manager", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
-  //xTaskCreate(vI2CTask, "I2C", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
   //xTaskCreate(vInoutsTask, "Inouts", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-  //xTaskCreate(vSpiFlashTask, "Flash", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
   vTaskStartScheduler();
 
   return 0;
@@ -33,25 +35,16 @@ void vInoutsTask (void *pvParameters)
   for(;;)
   {
     //MODBUS_HR[MBHR_DISCRETE_OUTPUTS_LOW] = MODBUS_HR[MBHR_DISCRETE_INPUTS_LOW];
-    /*if(ISHIGH(COIL1_PORT,COIL1))
+    while(MODBUS_HR[MBHR_TEST_VALUE] != 0)
     {
       SET_PIN_HIGH(COIL1_PORT,COIL1);
-      SET_PIN_HIGH(COIL2_PORT,COIL2);
-    }
-    else
-    {
-      SET_PIN_LOW(COIL1_PORT,COIL1);
       SET_PIN_LOW(COIL2_PORT,COIL2);
-    }*/
-    vTaskDelay(3000 / portTICK_RATE_MS);
-  }
-}
-//------------------------------------------------------------------------------
-void vI2CTask (void *pvParameters)
-{
-  for(;;)
-  {
-    //vTaskDelay(1000 / portTICK_RATE_MS);
+      vTaskDelay(500 / portTICK_RATE_MS);
+      SET_PIN_LOW(COIL1_PORT,COIL1);
+      SET_PIN_HIGH(COIL2_PORT,COIL2);
+      vTaskDelay(500 / portTICK_RATE_MS);
+      MODBUS_HR[MBHR_TEST_VALUE]--;
+    }
   }
 }
 //------------------------------------------------------------------------------
@@ -117,12 +110,6 @@ static void prvSetupHardware( void )
   TIM_TimeBaseInit(TIM3, &timerInitStructure);
   TIM_Cmd(TIM3, ENABLE);
   
-  if(FLASH->CR & FLASH_CR_LOCK)
-  {// Разблокировка LOCK при необходимости.
-    FLASH->KEYR=FLASH_KEY1;
-    FLASH->KEYR=FLASH_KEY2;
-    while(FLASH->SR & FLASH_SR_BSY);
-  }
   //run led
   SET_PIN_LOW(GPIOB,5);
   SET_PIN_OUTPUT_PP(GPIOB,5);

@@ -1,0 +1,3 @@
+/home/voodoojah/progs/pidbot/modbustest/build/CMakeFiles/rebuild_cache.dir
+/home/voodoojah/progs/pidbot/modbustest/build/CMakeFiles/modbustest.dir
+/home/voodoojah/progs/pidbot/modbustest/build/CMakeFiles/edit_cache.dir

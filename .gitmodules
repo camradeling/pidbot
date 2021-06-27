@@ -7,3 +7,6 @@
 [submodule "firmware/Libraries/modbuslib"]
 	path = firmware/Libraries/modbuslib
 	url = git@github.com:voodoojah/modbuslib.git
+[submodule "firmware/Libraries/tinyusb"]
+	path = firmware/Libraries/tinyusb
+	url = https://github.com/hathach/tinyusb.git

@@ -15,8 +15,9 @@ int main(int argc, char* argv[])
 	client->com = new COMPort;
 	client->com->alias = "/dev/ttyUSB0";
 	client->com->init();
-	client->send_loop_08(MB_BROADCAST_ADDR);
-	//client->send_writereg_06(0xff,MBHR_DISCRETE_OUTPUTS_LOW,val);
+	client->send_read_03(MB_BROADCAST_ADDR,0,2);
+	fprintf(stderr, "REG 00: 0x%04X\n",*(uint16_t*)&client->rbuf[3]);
+	fprintf(stderr, "REG 01: 0x%04X\n",*(uint16_t*)&client->rbuf[5]);
 	return 0;
 }
 //----------------------------------------------------------------------------------------------------------------------

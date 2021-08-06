@@ -17,11 +17,11 @@ int main( void )
 {
   prvSetupHardware();
 
-  //MODBUS_HR[MBHR_REG_MY_MBADDR] = 1;
-  //MODBUS_HR[MBHR_TEST_VALUE] = 5;
-  //write_eeprom();
-  //init_eeprom();
-  tusb_init();
+  MODBUS_HR[MBHR_REG_MY_MBADDR] = 1;
+  MODBUS_HR[MBHR_TEST_VALUE] = 5;
+  write_eeprom();
+  init_eeprom();
+  //tusb_init();
   Com1RxSemaphore = xSemaphoreCreateCounting(MAX_COM_QUEUE_LENGTH, 0);
   xTaskCreate(vPacketsManagerTask, "Packets_manager", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
   //xTaskCreate(vInoutsTask, "Inouts", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);

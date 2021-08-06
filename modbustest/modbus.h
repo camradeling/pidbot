@@ -47,8 +47,10 @@ public:
 	ModbusClient(){}
 	~ModbusClient(){}
 	void send_loop_08(uint8_t addr);
+	void send_read_03(uint8_t addr, uint16_t reg,uint16_t cnt);
 	void send_writereg_06(uint8_t addr, uint16_t reg,uint16_t val);
 	COMPort* com=nullptr;
+	uint8_t rbuf[255];
 	uint16_t calc_crc(uint8_t *arr, uint8_t length);
 };
 //------------------------------------------------------------------------------

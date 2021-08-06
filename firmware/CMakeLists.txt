@@ -46,11 +46,11 @@ set(Sources
         )
 
 
-set(CROSS_PATH /home/$ENV{USER}/x-tools/arm-unknown-eabi/bin)
-set(CMAKE_CXX_COMPILER ${CROSS_PATH}/arm-unknown-eabi-g++)
-set(CMAKE_C_COMPILER ${CROSS_PATH}/arm-unknown-eabi-gcc)
-set(CMAKE_OBJCOPY ${CROSS_PATH}/arm-unknown-eabi-objcopy)
-#set(CMAKE_C_LINK_EXECUTABLE ${CROSS_PATH}/arm-unknown-eabi-ld)
+#set(CROSS_PATH /home/$ENV{USER}/x-tools/arm-none-eabi/bin)
+set(CMAKE_CXX_COMPILER arm-none-eabi-g++)
+set(CMAKE_C_COMPILER arm-none-eabi-gcc)
+set(CMAKE_OBJCOPY arm-none-eabi-objcopy)
+#set(CMAKE_C_LINK_EXECUTABLE ${CROSS_PATH}/arm-none-eabi-ld)
 
 set(LINKER_SCRIPT stm32f103md2.ld)
 #set_target_properties(${PROJECT_NAME} PROPERTIES LINK_DEPENDS ${LINKER_SCRIPT})

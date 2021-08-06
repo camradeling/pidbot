@@ -1,1 +1,0 @@
-/usr/bin/c++     CMakeFiles/modbustest.dir/main.cpp.o CMakeFiles/modbustest.dir/modbus.cpp.o CMakeFiles/modbustest.dir/uart.cpp.o  -o modbustest 

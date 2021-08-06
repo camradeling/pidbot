@@ -172,6 +172,24 @@ void ModbusClient::send_loop_08(uint8_t addr)
     fprintf(stderr, "got no reply\n");
 }
 //------------------------------------------------------------------------------
+void ModbusClient::send_read_03(uint8_t addr, uint16_t reg,uint16_t cnt)
+{
+  uint8_t data[255]={0};
+  data[0] = addr;
+  data[1] = 0x03;
+  data[2] = (reg & 0xff00) >> 8;
+  data[3] = reg & 0x00ff;
+  data[4] = (cnt & 0xff00) >> 8;
+  data[5] = cnt & 0x00ff;
+  uint16_t crc = calc_crc(data, 6);
+  *(uint16_t*)&data[6] = crc;
+  com->com_write_chunk(com->clientfd, data, 8);
+  usleep(5000);
+  int res = com->com_read_chunk(com->clientfd, rbuf, 255);
+  if(res <= 0)
+    fprintf(stderr, "got no reply\n");
+}
+//------------------------------------------------------------------------------
 //=== <Modbus_16> Запись множества входных регистров ===//
 /*void CmdModbus_16(ComMessage* inPack, ComMessage* outPack)
 {

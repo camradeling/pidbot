@@ -17,9 +17,9 @@ int main( void )
 {
   prvSetupHardware();
 
-  MODBUS_HR[MBHR_REG_MY_MBADDR] = 1;
-  MODBUS_HR[MBHR_TEST_VALUE] = 5;
-  write_eeprom();
+  MODBUS_HR[MBHR_REG_MY_MBADDR] = 0xEEEE;
+  MODBUS_HR[MBHR_TEST_VALUE] = 0xBBBB;
+  //write_eeprom();
   init_eeprom();
   //tusb_init();
   Com1RxSemaphore = xSemaphoreCreateCounting(MAX_COM_QUEUE_LENGTH, 0);
@@ -57,6 +57,8 @@ static void prvSetupHardware( void )
 {
   /* Start with the clocks in their expected state. */
   RCC_DeInit();
+  RCC_HSICmd(ENABLE);//needed for flash programming
+  while( RCC_GetFlagStatus( RCC_FLAG_HSIRDY ) == RESET ){}
   /* Enable HSE (high speed external clock). */
   RCC_HSEConfig( RCC_HSE_ON );
   /* Wait till HSE is ready. */
@@ -117,10 +119,8 @@ static void prvSetupHardware( void )
   //coil pins
   SET_PIN_LOW(GPIOB,15);//coil 1
   SET_PIN_OUTPUT_PP(GPIOB,15);
-  //SET_PIN_HIGH(GPIOB,15);
   SET_PIN_LOW(GPIOB,14);//coil 2
   SET_PIN_OUTPUT_PP(GPIOB,14);
-  //SET_PIN_HIGH(GPIOB,14);
   
   USART_InitTypeDef USART_InitStructure;
   USART_InitStructure.USART_BaudRate = INIT_BAUDRATE;

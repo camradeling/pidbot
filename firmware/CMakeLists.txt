@@ -46,16 +46,13 @@ set(Sources
         )
 
 
-#set(CROSS_PATH /home/$ENV{USER}/x-tools/arm-none-eabi/bin)
 set(CMAKE_CXX_COMPILER arm-none-eabi-g++)
 set(CMAKE_C_COMPILER arm-none-eabi-gcc)
 set(CMAKE_OBJCOPY arm-none-eabi-objcopy)
-#set(CMAKE_C_LINK_EXECUTABLE ${CROSS_PATH}/arm-none-eabi-ld)
 
-set(LINKER_SCRIPT stm32f103md2.ld)
-#set_target_properties(${PROJECT_NAME} PROPERTIES LINK_DEPENDS ${LINKER_SCRIPT})
-set(CMAKE_EXE_LINKER_FLAGS "-T ${PROJECT_SOURCE_DIR}/${LINKER_SCRIPT}")
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-Map=${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map -Wl,--gc-sections")
+
+
+
 set(CMAKE_C_FLAGS "-mcpu=cortex-m3 -mthumb -mno-thumb-interwork -mfpu=vfp -msoft-float -mfix-cortex-m3-ldrd -nostdlib -fdata-sections -ffunction-sections")
 if(DEBUG_INFO)
         message(STATUS "DEBUG_INFO set")
@@ -64,7 +61,11 @@ if(DEBUG_INFO)
 else()
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2 -s")
 endif()
+message(STATUS "CMAKE_C_FLAGS ${CMAKE_C_FLAGS}")
 add_executable(${PROJECT_NAME}.elf ${Sources} ${LINKER_SCRIPT})
+set(FIRMWARE_LINKER_SCRIPT stm32f103md_firmware.ld)
+#set_target_properties(${PROJECT_NAME}.elf PROPERTIES LINK_DEPENDS ${FIRMWARE_LINKER_SCRIPT})
+target_link_options(${PROJECT_NAME}.elf PUBLIC "SHELL:-T ${PROJECT_SOURCE_DIR}/${FIRMWARE_LINKER_SCRIPT} -Wl,-Map=${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map -Wl,--gc-sections")
 
 target_include_directories(${PROJECT_NAME}.elf PUBLIC ${PROJECT_SOURCE_DIR})
 target_include_directories(${PROJECT_NAME}.elf PUBLIC ${PROJECT_SOURCE_DIR}/Libraries/modbuslib)

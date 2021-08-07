@@ -6,6 +6,7 @@
 #include "semphr.h"
 //------------------------------------------------------------------------------
 #define FLASH_PAGE_SIZE             0x400
+#define FLASH_PAGE_SIZE_MASK        0xfffffc00
 #define BOOTLOADER_START            0x08000000
 #define BOOTLOADER_FINISH           0x08007bff
 #define EEPROM_START                0x08007c00

@@ -60,8 +60,9 @@ void vJumpFirmware (void *pvParameters)
     SysTick->LOAD = 0;
     SysTick->VAL = 0;
     SCB->VTOR = FIRMWARE_START;
-    //__disable_irq();
+    portDISABLE_INTERRUPTS();
     __set_MSP(*(uint32_t*) FIRMWARE_START);
+    __set_PSP(*(uint32_t*) FIRMWARE_START);
     ((void (*)(void))jumpAddr)();
   }
 }

@@ -14,7 +14,7 @@ void vApplicationTickHook( void );
 int main( void )
 {
   prvSetupHardware();
-  //__enable_irq();
+
   MODBUS_HR[MBHR_REG_MY_MBADDR] = 0xF1AE;
   MODBUS_HR[MBHR_TEST_VALUE] = 0xF1AE;
   //write_eeprom();

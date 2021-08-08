@@ -56,8 +56,8 @@ set(Firmware_Sources
         Libraries/modbuslib/modbus.c
         globals.c
         serial.c
-        stm32f10x_firm_it.c
-        stm32f10x_firm_vector.c
+        stm32f10x_it.c
+        stm32f10x_vector.c
         ${FreeRTOSSources}
         ${PeripheralSources}
         #${USBSources}

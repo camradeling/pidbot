@@ -3,6 +3,7 @@
 extern void TimingDelay_Decrement(void);
 //------------------------------------------------------------------------------
 extern int main( void );
+void* _estack;
 void* _sidata;
 void* _sdata;
 void* _edata;
@@ -69,8 +70,6 @@ void PendSVC(void)
 //------------------------------------------------------------------------------
 void SysTickHandler(void)
 {
-  /* Decrement the TimingDelay variable */
-  //TimingDelay_Decrement();
 }
 //------------------------------------------------------------------------------
 void WWDG_IRQHandler(void)

@@ -1,4 +1,5 @@
 #include "includes.h"
+#include "eeprom.h"
 #include "tusb.h"
 //------------------------------------------------------------------------------
 /*Configure the clocks, GPIO and other peripherals */
@@ -10,17 +11,14 @@ static void vInoutsTask (void *pvParameters);
 //------------------------------------------------------------------------------
 void vApplicationTickHook( void );
 //------------------------------------------------------------------------------
-extern int write_eeprom();
-extern int init_eeprom();
-//------------------------------------------------------------------------------
 int main( void )
 {
   prvSetupHardware();
-
-  MODBUS_HR[MBHR_REG_MY_MBADDR] = 0xEEEE;
-  MODBUS_HR[MBHR_TEST_VALUE] = 0xBBBB;
+  //__enable_irq();
+  MODBUS_HR[MBHR_REG_MY_MBADDR] = 0xF1AE;
+  MODBUS_HR[MBHR_TEST_VALUE] = 0xF1AE;
   //write_eeprom();
-  init_eeprom();
+  //init_eeprom();
   //tusb_init();
   Com1RxSemaphore = xSemaphoreCreateCounting(MAX_COM_QUEUE_LENGTH, 0);
   xTaskCreate(vPacketsManagerTask, "Packets_manager", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
@@ -96,7 +94,7 @@ static void prvSetupHardware( void )
   RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
   RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1, ENABLE);
   /* Set the Vector Table base address at 0x08000000 */
-  NVIC_SetVectorTable( NVIC_VectTab_FLASH, 0x0 );        
+  //NVIC_SetVectorTable( NVIC_VectTab_FLASH, 0x0 );        
   NVIC_PriorityGroupConfig( NVIC_PriorityGroup_4 );
   /* Configure HCLK clock as SysTick clock source. */
   SysTick_CLKSourceConfig( SysTick_CLKSource_HCLK );

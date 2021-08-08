@@ -10,17 +10,11 @@ extern void vPortSVCHandler( void );
 typedef void( *intfunc )( void );
 typedef union { intfunc __fun; void * __ptr; } intvec_elem;
 
-/* Private define ------------------------------------------------------------*/
-/* Private macro -------------------------------------------------------------*/
-/* Private variables ---------------------------------------------------------*/
-/* Private function prototypes -----------------------------------------------*/
-/* Private functions ---------------------------------------------------------*/
 
 
 #pragma language=extended
 #pragma segment="CSTACK"
 
-//void __iar_program_start( void );
 
 #pragma location = ".intvec"
 

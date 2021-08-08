@@ -5,7 +5,7 @@
 #include <sys/time.h>
 #include "uart.h"
 //------------------------------------------------------------------------------
-#define SWAP16(x) (((uint16_t)x << 8)|((uint16_t)x >> 8))
+#define SWAP16(x) ((((uint16_t)x << 8) & 0xff00)|(((uint16_t)x >> 8) & 0x00ff))
 //------------------------------------------------------------------------------
 #define MBHR_DISCRETE_INPUTS_LOW                0
 #define MBHR_DISCRETE_INPUTS_HIGH               1

@@ -1,91 +1,216 @@
-#include <stdint.h>
-#include "stm32f10x.h"
-#include "app_config.h"
-#include "bootloader.h"
-//-----------------------------------------------------------------------------------------------
-int flash_erase(uint32_t addr)
+#include "includes.h"
+#include "eeprom.h"
+//------------------------------------------------------------------------------
+/*Configure the clocks, GPIO and other peripherals */
+static void prvSetupHardware( void );
+//------------------------------------------------------------------------------
+static void vI2CTask (void *pvParameters);
+//------------------------------------------------------------------------------
+static void vInoutsTask (void *pvParameters);
+//------------------------------------------------------------------------------
+static void vJumpFirmware (void *pvParameters);
+//------------------------------------------------------------------------------
+void vApplicationTickHook( void );
+//------------------------------------------------------------------------------
+int main( void )
 {
-	int32_t tmt=DEFAULT_FLASH_WRTMT;
-	if(FLASH->CR & FLASH_CR_LOCK)
-	{	// Разблокировка LOCK при необходимости.
-		FLASH->KEYR=FLASH_KEY1;
-		FLASH->KEYR=FLASH_KEY2;
-		while(FLASH->SR & FLASH_SR_BSY && tmt--);
-		if(tmt <= 0)
-			return BSY_FLAG_TIMEOUT;
-	}
-	tmt=DEFAULT_FLASH_WRTMT;
-	while(FLASH->SR & FLASH_SR_BSY && tmt--);		// Дождаться конца незаконченной операции. Разблокировка проводилась при ините.
-	if(tmt <= 0)
-		return BSY_FLAG_TIMEOUT;
-	FLASH->CR |= FLASH_CR_PER;		// Разрешение стирания страницы 1 кБайт.
-	FLASH->AR=addr;		// Занести адрес стираемой страницы.
-	FLASH->CR |= FLASH_CR_STRT;		// Старт стирания.
-	//NOP();		// Обязательная задержка.
-	tmt=DEFAULT_FLASH_WRTMT;
-	while(FLASH->SR & FLASH_SR_BSY && tmt--);		// Ожидание конца стирания.
-	if(tmt <= 0)
-		return BSY_FLAG_TIMEOUT;
-	// Ожидание конца операции.
-	tmt=DEFAULT_FLASH_WRTMT;
-	FLASH->CR &=~(FLASH_CR_PER | FLASH_CR_STRT);		// Вернуть взад.
-	while((FLASH->SR & FLASH_SR_EOP)==0);
-	if(tmt <= 0)
-		return EOP_FLAG_TIMEOUT;
-	FLASH->SR |= FLASH_SR_EOP;		// Закончить операцию.
-	return 0;
+  prvSetupHardware();
+
+  MODBUS_HR[MBHR_REG_MY_MBADDR] = 0xB00D;
+  MODBUS_HR[MBHR_TEST_VALUE] = 0xB00D;
+  //usart rx interrupt
+  
+  //write_eeprom();
+  //init_eeprom();
+  //tusb_init();
+  Com1RxSemaphore = xSemaphoreCreateCounting(MAX_COM_QUEUE_LENGTH, 0);
+  xTaskCreate(vPacketsManagerTask, "Packets_manager", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
+  xTaskCreate(vJumpFirmware, "JumpFirmware", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+  //xTaskCreate(vInoutsTask, "Inouts", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+  vTaskStartScheduler();
+
+  return 0;
 }
-//-----------------------------------------------------------------------------------------------
-int write_flash(uint32_t addr, uint16_t* data, int len, int erase)
+//------------------------------------------------------------------------------
+void vJumpFirmware (void *pvParameters)
 {
-	uint32_t PageStart = addr & FLASH_PAGE_SIZE_MASK;
-	if(erase)
-		flash_erase(PageStart);
-	int bytesleft=len;
-	int32_t tmt=DEFAULT_FLASH_WRTMT;
-	if(FLASH->CR & FLASH_CR_LOCK)
-	{	// Разблокировка LOCK при необходимости.
-		FLASH->KEYR=FLASH_KEY1;
-		FLASH->KEYR=FLASH_KEY2;
-		while(FLASH->SR & FLASH_SR_BSY);
-		if(tmt <= 0)
-			return BSY_FLAG_TIMEOUT;
-	}
-	while((addr < PageStart+len) && (bytesleft > 0))
+  for(;;)
+  {
+    vTaskDelay(3000 / portTICK_RATE_MS);
+    //выключаем периферию
+    TIM_Cmd(TIM3, DISABLE);
+    USART_Cmd(USART1, DISABLE);
+    //отключаем все прерывания в NVIC
+    uint32_t ISER[3];
+    ISER[0] = NVIC->ISER[0];
+    ISER[1] = NVIC->ISER[1];
+    ISER[2] = NVIC->ISER[2];
+    NVIC->ICER[0] = 0xFFFFFFFF;
+    NVIC->ICER[1] = 0xFFFFFFFF;
+    NVIC->ICER[2] = 0xFFFFFFFF;
+
+    //очищаем все pending bit
+    NVIC->ICPR[0] = 0xFFFFFFFF;
+    NVIC->ICPR[1] = 0xFFFFFFFF;
+    NVIC->ICPR[2] = 0xFFFFFFFF;
+    uint32_t jumpAddr = *(uint32_t*)(FIRMWARE_START+4);
+    
+    RCC_DeInit();
+    SysTick->CTRL = 0;
+    SysTick->LOAD = 0;
+    SysTick->VAL = 0;
+    SCB->VTOR = FIRMWARE_START;
+    //__disable_irq();
+    __set_MSP(*(uint32_t*) FIRMWARE_START);
+    ((void (*)(void))jumpAddr)();
+  }
+}
+//------------------------------------------------------------------------------
+void vInoutsTask (void *pvParameters)
+{
+  for(;;)
+  {
+    //MODBUS_HR[MBHR_DISCRETE_OUTPUTS_LOW] = MODBUS_HR[MBHR_DISCRETE_INPUTS_LOW];
+    while(MODBUS_HR[MBHR_TEST_VALUE] != 0)
+    {
+      SET_PIN_HIGH(COIL1_PORT,COIL1);
+      SET_PIN_LOW(COIL2_PORT,COIL2);
+      vTaskDelay(500 / portTICK_RATE_MS);
+      SET_PIN_LOW(COIL1_PORT,COIL1);
+      SET_PIN_HIGH(COIL2_PORT,COIL2);
+      vTaskDelay(500 / portTICK_RATE_MS);
+      MODBUS_HR[MBHR_TEST_VALUE]--;
+    }
+  }
+}
+//------------------------------------------------------------------------------
+void vApplicationTickHook( void )//вызывается каждую миллисекунду
+{
+  return;
+}
+//------------------------------------------------------------------------------
+static void prvSetupHardware( void )
+{
+  /* Start with the clocks in their expected state. */
+  RCC_DeInit();
+  RCC_HSICmd(ENABLE);//needed for flash programming
+  while( RCC_GetFlagStatus( RCC_FLAG_HSIRDY ) == RESET ){}
+  /* Enable HSE (high speed external clock). */
+  RCC_HSEConfig( RCC_HSE_ON );
+  /* Wait till HSE is ready. */
+  while( RCC_GetFlagStatus( RCC_FLAG_HSERDY ) == RESET ){}
+  /* 2 wait states required on the flash. */
+  *( ( unsigned long * ) 0x40022000 ) = 0x02;
+  /* HCLK = SYSCLK */
+  RCC_HCLKConfig( RCC_SYSCLK_Div1 );
+  /* PCLK2 = HCLK */
+  RCC_PCLK2Config( RCC_HCLK_Div1 );
+  /* PCLK1 = HCLK/2 */
+  RCC_PCLK1Config( RCC_HCLK_Div2 );
+  /* PLLCLK = 8MHz * 9 = 72 MHz. */
+  RCC_PLLConfig( RCC_PLLSource_HSE_Div1, RCC_PLLMul_9 );
+  /* Enable PLL. */
+  RCC_PLLCmd( ENABLE );
+  /* Wait till PLL is ready. */
+  while(RCC_GetFlagStatus(RCC_FLAG_PLLRDY) == RESET)
+  {
+  }
+  /* Select PLL as system clock source. */
+  RCC_SYSCLKConfig( RCC_SYSCLKSource_PLLCLK );
+  /* Wait till PLL is used as system clock source. */
+  while( RCC_GetSYSCLKSource() != 0x08 )
+  {
+  }
+  /* Enable GPIOA, GPIOB, GPIOC, GPIOD, GPIOE and AFIO clocks */
+  RCC_APB2PeriphClockCmd(	RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB |RCC_APB2Periph_GPIOC \
+						| RCC_APB2Periph_GPIOD | RCC_APB2Periph_GPIOE |  \
+                                                  RCC_APB2Periph_AFIO | RCC_APB2Periph_SPI1 | \
+                                                    RCC_APB2Periph_ADC1 | RCC_APB2Periph_USART1, ENABLE );
+  /* Configure the ADC clock */
+  RCC_ADCCLKConfig(RCC_PCLK2_Div8);
+  //enable dma clock
+  RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
+  RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1, ENABLE);
+  /* Set the Vector Table base address at 0x08000000 */
+  NVIC_SetVectorTable( NVIC_VectTab_FLASH, 0x0 );        
+  NVIC_PriorityGroupConfig( NVIC_PriorityGroup_4 );
+  /* Configure HCLK clock as SysTick clock source. */
+  SysTick_CLKSourceConfig( SysTick_CLKSource_HCLK );
+  
+  RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM1, ENABLE);
+  //пока что для отладки
+  RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);   
+  TIM_TimeBaseInitTypeDef timerInitStructure;
+  timerInitStructure.TIM_Prescaler = 35;
+  timerInitStructure.TIM_CounterMode = TIM_CounterMode_Up;
+  timerInitStructure.TIM_Period = 0xffff;
+  timerInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;
+  TIM_TimeBaseInit(TIM3, &timerInitStructure);
+  TIM_Cmd(TIM3, ENABLE);
+  
+  //run led
+  SET_PIN_LOW(GPIOB,5);
+  SET_PIN_OUTPUT_PP(GPIOB,5);
+  SET_PIN_HIGH(GPIOB,5);
+  //coil pins
+  SET_PIN_LOW(GPIOB,15);//coil 1
+  SET_PIN_OUTPUT_PP(GPIOB,15);
+  SET_PIN_LOW(GPIOB,14);//coil 2
+  SET_PIN_OUTPUT_PP(GPIOB,14);
+  
+  USART_InitTypeDef USART_InitStructure;
+  USART_InitStructure.USART_BaudRate = INIT_BAUDRATE;
+  USART_InitStructure.USART_WordLength = USART_WordLength_8b;
+  USART_InitStructure.USART_StopBits = USART_StopBits_1;
+  USART_InitStructure.USART_Parity = USART_Parity_No;
+  USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+  USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
+  //НОги Rx Tx USART1
+  SET_PIN_ALTMODE_PP(GPIOA,9);
+  SET_PIN_INPUT(GPIOA,10);
+  USART_Init(USART1, &USART_InitStructure);
+  USART_Cmd(USART1, ENABLE);
+  
+  //
+  NVIC_InitTypeDef NVIC_InitStructure;
+  //usart rx interrupt
+  NVIC_InitStructure.NVIC_IRQChannel = USART1_IRQn;
+  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = configLIBRARY_KERNEL_INTERRUPT_PRIORITY;
+  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+  NVIC_Init( &NVIC_InitStructure );
+  //usart dma tx interrupt
+  NVIC_InitStructure.NVIC_IRQChannel = DMA1_Channel4_IRQn;
+  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = configLIBRARY_KERNEL_INTERRUPT_PRIORITY;
+  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0; //Not used as 4 bits are used for the pre-emption priority. 
+  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+  NVIC_Init( &NVIC_InitStructure );
+  //usart dma rx interrupt
+  NVIC_InitStructure.NVIC_IRQChannel = DMA1_Channel5_IRQn;
+  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = configLIBRARY_KERNEL_INTERRUPT_PRIORITY;
+  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0; //Not used as 4 bits are used for the pre-emption priority. 
+  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+  NVIC_Init( &NVIC_InitStructure );
+  //usart tim rx interrupt cc
+  NVIC_InitStructure.NVIC_IRQChannel = TIM1_CC_IRQn;
+  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = configLIBRARY_KERNEL_INTERRUPT_PRIORITY;
+  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0; //Not used as 4 bits are used for the pre-emption priority. 
+  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+  NVIC_Init( &NVIC_InitStructure );
+  //usart tim rx interrupt upd
+  NVIC_InitStructure.NVIC_IRQChannel = TIM1_UP_IRQn;
+  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = configLIBRARY_KERNEL_INTERRUPT_PRIORITY;
+  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0; //Not used as 4 bits are used for the pre-emption priority. 
+  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+  NVIC_Init( &NVIC_InitStructure );
+}
+//------------------------------------------------------------------------------
+#ifdef  DEBUG
+/* Keep the linker happy. */
+void assert_failed( unsigned char* pcFile, unsigned long ulLine )
+{
+	for( ;; )
 	{
-		tmt=DEFAULT_FLASH_WRTMT;
-		while(FLASH->SR & FLASH_SR_BSY);		// Дождаться конца незаконченной операции. Разблокировка проводилась при ините.
-		if(tmt <= 0)
-			return BSY_FLAG_TIMEOUT;
-		FLASH->CR |= FLASH_CR_PG;		// Старт программирования.
-		*(u16 *)addr=*data;		// Запись данного data по адресу addr.
-		tmt=DEFAULT_FLASH_WRTMT;
-		while(FLASH->SR & FLASH_SR_BSY);		// Ожидание конца программирования.
-		if(tmt <= 0)
-			return BSY_FLAG_TIMEOUT;
-		FLASH->CR &=~FLASH_CR_PG;		// Конец программирования.
-		tmt=DEFAULT_FLASH_WRTMT;
-		while((FLASH->SR & FLASH_SR_EOP)==0);		// Ожидание конца операции.
-		if(tmt <= 0)
-			return EOP_FLAG_TIMEOUT;
-		FLASH->SR |= FLASH_SR_EOP;		// Закончить операцию.
-		addr += 2;
-		bytesleft -= 2;
-		data++;
 	}
-	FLASH->CR |= FLASH_CR_LOCK;//lock it back
-	return 0;
 }
-//-----------------------------------------------------------------------------------------------
-int write_firmware_block(uint32_t addr, uint16_t* data, int len, int erase)
-{
-	if(addr < FIRMWARE_START)
-		return FIRMWARE_ADDR_INVALID;
-	if(len%2)
-		len+=1;
-	if(addr+len > FIRMWARE_FINISH+1)
-		return FIRMWARE_ADDR_INVALID;
-	int res = write_flash(addr, data, len, erase);
-	return res;
-}
-//-----------------------------------------------------------------------------------------------
+#endif

@@ -5,9 +5,7 @@
 #include "modbus.h"
 #include "eeprom.h"
 //-----------------------------------------------------------------------------------------------
-#define EEPROM_REG_MY_MBADDR          	0
-#define EEPROM_REG_TEST_VALUE			1
-#define EEPROM_NUM_REGS					(EEPROM_REG_TEST_VALUE + 1)
+#define EEPROM_NUM_REGS					2
 //-----------------------------------------------------------------------------------------------
 extern uint16_t MODBUS_HR[];
 //-----------------------------------------------------------------------------------------------
@@ -37,7 +35,7 @@ int flash_erase(uint32_t addr)
 	// Ожидание конца операции.
 	tmt=DEFAULT_FLASH_WRTMT;
 	FLASH->CR &=~(FLASH_CR_PER | FLASH_CR_STRT);		// Вернуть взад.
-	while((FLASH->SR & FLASH_SR_EOP)==0);
+	while((FLASH->SR & FLASH_SR_EOP)==0 && tmt--);
 	if(tmt <= 0)
 		return EOP_FLAG_TIMEOUT;
 	FLASH->SR |= FLASH_SR_EOP;		// Закончить операцию.
@@ -55,25 +53,25 @@ int write_flash(uint32_t addr, uint16_t* data, int len, int erase)
 	{	// Разблокировка LOCK при необходимости.
 		FLASH->KEYR=FLASH_KEY1;
 		FLASH->KEYR=FLASH_KEY2;
-		while(FLASH->SR & FLASH_SR_BSY);
+		while((FLASH->SR & FLASH_SR_BSY) && tmt--);
 		if(tmt <= 0)
 			return BSY_FLAG_TIMEOUT;
 	}
 	while((addr < PageStart+len) && (bytesleft > 0))
 	{
 		tmt=DEFAULT_FLASH_WRTMT;
-		while(FLASH->SR & FLASH_SR_BSY);		// Дождаться конца незаконченной операции. Разблокировка проводилась при ините.
+		while((FLASH->SR & FLASH_SR_BSY) && tmt--);		// Дождаться конца незаконченной операции. Разблокировка проводилась при ините.
 		if(tmt <= 0)
 			return BSY_FLAG_TIMEOUT;
 		FLASH->CR |= FLASH_CR_PG;		// Старт программирования.
 		*(u16 *)addr=*data;		// Запись данного data по адресу addr.
 		tmt=DEFAULT_FLASH_WRTMT;
-		while(FLASH->SR & FLASH_SR_BSY);		// Ожидание конца программирования.
+		while((FLASH->SR & FLASH_SR_BSY) && tmt--);		// Ожидание конца программирования.
 		if(tmt <= 0)
 			return BSY_FLAG_TIMEOUT;
 		FLASH->CR &=~FLASH_CR_PG;		// Конец программирования.
 		tmt=DEFAULT_FLASH_WRTMT;
-		while((FLASH->SR & FLASH_SR_EOP)==0);		// Ожидание конца операции.
+		while((FLASH->SR & FLASH_SR_EOP)==0 && tmt--);		// Ожидание конца операции.
 		if(tmt <= 0)
 			return EOP_FLAG_TIMEOUT;
 		FLASH->SR |= FLASH_SR_EOP;		// Закончить операцию.
@@ -99,7 +97,7 @@ int write_firmware_block(uint32_t addr, uint16_t* data, int len, int erase)
 //-----------------------------------------------------------------------------------------------
 int write_eeprom()
 {
-	int res = write_flash(EEPROM_START, &MODBUS_HR[MBHR_REG_MY_MBADDR], EEPROM_NUM_REGS*sizeof(uint16_t), 1);
+	int res = write_flash(EEPROM_START, &MODBUS_HR[MBHR_BOOTLOADER_STATUS], EEPROM_NUM_REGS*sizeof(uint16_t), 1);
 	if(res < 0)
 	{
 		for(int i = 0; i < EEPROM_NUM_REGS; i++)
@@ -111,7 +109,7 @@ int write_eeprom()
 int init_eeprom()
 {
 	for(int i = 0; i < EEPROM_NUM_REGS; i++)
-		MODBUS_HR[MBHR_REG_MY_MBADDR+i] = *(uint16_t*)(EEPROM_START + i*sizeof(uint16_t));
+		MODBUS_HR[MBHR_BOOTLOADER_STATUS+i] = *(uint16_t*)(EEPROM_START + i*sizeof(uint16_t));
 	return 0;
 }
 //-----------------------------------------------------------------------------------------------

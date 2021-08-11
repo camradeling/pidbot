@@ -11,14 +11,61 @@ static void vInoutsTask (void *pvParameters);
 //------------------------------------------------------------------------------
 void vApplicationTickHook( void );
 //------------------------------------------------------------------------------
+extern register_cb isregwrtbl_cb;
+extern register_cb regwr_cb;
+extern uint16_t* UsartPackets;
+extern uint16_t* UsartErrors;
+//------------------------------------------------------------------------------
+volatile uint32_t msTick=0;
+//------------------------------------------------------------------------------
+int is_readonly(uint16_t addr)
+{
+  switch(addr)
+  {
+  case MBHR_REG_FLASH_PAGE_SIZE:
+  case MBHR_REG_IN_UART_PACKS:
+  case MBHR_REG_IN_UART_PACKS_ERR:
+  {
+    return 1;
+  }
+  default:
+    return 0;  
+  }
+  return 0;
+}
+//------------------------------------------------------------------------------
+int process_register(uint16_t addr)
+{
+  switch(addr)
+  {
+  case MBHR_BOOTLOADER_STATUS:
+  case MBHR_REG_MY_MBADDR:
+  {
+    write_eeprom();
+    break;
+  }
+  default:
+    return 0;  
+  }
+  return 0;
+}
+//------------------------------------------------------------------------------
+void init_modbus()
+{
+  MyMBAddr = &MODBUS_HR[MBHR_REG_MY_MBADDR];
+  UsartPackets = &MODBUS_HR[MBHR_REG_IN_UART_PACKS];
+  UsartErrors = &MODBUS_HR[MBHR_REG_IN_UART_PACKS_ERR];
+  MODBUS_HR[MBHR_REG_FLASH_PAGE_SIZE] = FLASH_PAGE_SIZE;
+  init_eeprom();
+  MODBUS_HR[MBHR_BOOTLOADER_STATUS] = FIRMARE_RUNNING;
+}
+//------------------------------------------------------------------------------
 int main( void )
 {
   prvSetupHardware();
-
-  MODBUS_HR[MBHR_REG_MY_MBADDR] = 0xF1AE;
-  MODBUS_HR[MBHR_TEST_VALUE] = 0xF1AE;
-  //write_eeprom();
-  //init_eeprom();
+  isregwrtbl_cb = &is_readonly;
+  regwr_cb = &process_register;
+  init_modbus();
   //tusb_init();
   Com1RxSemaphore = xSemaphoreCreateCounting(MAX_COM_QUEUE_LENGTH, 0);
   xTaskCreate(vPacketsManagerTask, "Packets_manager", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
@@ -32,22 +79,18 @@ void vInoutsTask (void *pvParameters)
 {
   for(;;)
   {
-    //MODBUS_HR[MBHR_DISCRETE_OUTPUTS_LOW] = MODBUS_HR[MBHR_DISCRETE_INPUTS_LOW];
-    while(MODBUS_HR[MBHR_TEST_VALUE] != 0)
-    {
-      SET_PIN_HIGH(COIL1_PORT,COIL1);
-      SET_PIN_LOW(COIL2_PORT,COIL2);
-      vTaskDelay(500 / portTICK_RATE_MS);
-      SET_PIN_LOW(COIL1_PORT,COIL1);
-      SET_PIN_HIGH(COIL2_PORT,COIL2);
-      vTaskDelay(500 / portTICK_RATE_MS);
-      MODBUS_HR[MBHR_TEST_VALUE]--;
-    }
+    SET_PIN_HIGH(COIL1_PORT,COIL1);
+    SET_PIN_LOW(COIL2_PORT,COIL2);
+    vTaskDelay(500 / portTICK_RATE_MS);
+    SET_PIN_LOW(COIL1_PORT,COIL1);
+    SET_PIN_HIGH(COIL2_PORT,COIL2);
+    vTaskDelay(500 / portTICK_RATE_MS);
   }
 }
 //------------------------------------------------------------------------------
 void vApplicationTickHook( void )//вызывается каждую миллисекунду
 {
+  msTick++;
   return;
 }
 //------------------------------------------------------------------------------

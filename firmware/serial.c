@@ -1,5 +1,8 @@
 #include "includes.h"
 //------------------------------------------------------------------------------
+uint16_t* UsartPackets=NULL;
+uint16_t* UsartErrors=NULL;
+//------------------------------------------------------------------------------
 void USART1_IRQHandler(void)
 {
   if(USART_GetITStatus(USART1, USART_IT_TC) == SET)
@@ -151,11 +154,9 @@ void vPacketsManagerTask (void *pvParameters)
   DMA_USART_prepare_recieve();
   for(;;)
   {
-    SET_PIN_HIGH(COIL2_PORT,COIL2);
     xSemaphoreTake(Com1RxSemaphore, portMAX_DELAY );
     if(Com1RxReadInd != Com1RxWriteInd)
     {
-      SET_PIN_HIGH(COIL1_PORT,COIL1);
       Com1RxReadInd++;
       if(Com1RxReadInd >= MAX_COM_QUEUE_LENGTH)
         Com1RxReadInd = 0;
@@ -164,16 +165,23 @@ void vPacketsManagerTask (void *pvParameters)
       if(num >= MAX_COM_QUEUE_LENGTH)
         num = 0;
       ComMessage* cMesOut = &Com1TxQueue[num];
+      if(UsartPackets)
+        (*UsartPackets)++;
       if(process_net_packet(cMesIn, cMesOut) == MODBUS_PACKET_VALID_AND_PROCESSED)
+      {
         Com1TxWriteInd = num;
+      }
       else
+      {
+        if(UsartErrors)
+          (*UsartErrors)++;
         DMA_USART_prepare_recieve();
+      }
     }
     if(Com1TxReadInd != Com1TxWriteInd)
     {
       if(!transmitActive)
       {
-
         Com1TxReadInd++;
         if(Com1TxReadInd >= MAX_COM_QUEUE_LENGTH)
           Com1TxReadInd = 0;

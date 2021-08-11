@@ -12,21 +12,67 @@ static void vJumpFirmware (void *pvParameters);
 //------------------------------------------------------------------------------
 void vApplicationTickHook( void );
 //------------------------------------------------------------------------------
+extern register_cb isregwrtbl_cb;
+extern register_cb regwr_cb;
+extern uint16_t* UsartPackets;
+extern uint16_t* UsartErrors;
+//------------------------------------------------------------------------------
+uint32_t jumpCounter=0;
+volatile uint32_t msTick=0;
+//------------------------------------------------------------------------------
+int is_readonly(uint16_t addr)
+{
+  switch(addr)
+  {
+  case MBHR_REG_FLASH_PAGE_SIZE:
+  case MBHR_REG_IN_UART_PACKS:
+  case MBHR_REG_IN_UART_PACKS_ERR:
+  {
+    return 1;
+  }
+  default:
+    return 0;  
+  }
+  return 0;
+}
+//------------------------------------------------------------------------------
+int process_register(uint16_t addr)
+{
+  switch(addr)
+  {
+  case MBHR_BOOTLOADER_STATUS:
+  case MBHR_REG_MY_MBADDR:
+  {
+    write_eeprom();
+    break;
+  }
+  default:
+    return 0;  
+  }
+  jumpCounter=msTick;
+  return 0;
+}
+//------------------------------------------------------------------------------
+void init_modbus()
+{
+  MyMBAddr = &MODBUS_HR[MBHR_REG_MY_MBADDR];
+  UsartPackets = &MODBUS_HR[MBHR_REG_IN_UART_PACKS];
+  UsartErrors = &MODBUS_HR[MBHR_REG_IN_UART_PACKS_ERR];
+  MODBUS_HR[MBHR_REG_FLASH_PAGE_SIZE] = FLASH_PAGE_SIZE;
+  init_eeprom();
+}
+//------------------------------------------------------------------------------
 int main( void )
 {
   prvSetupHardware();
+  isregwrtbl_cb = &is_readonly;
+  regwr_cb = &process_register;
 
-  MODBUS_HR[MBHR_REG_MY_MBADDR] = 0xB00D;
-  MODBUS_HR[MBHR_TEST_VALUE] = 0xB00D;
-  //usart rx interrupt
-  
-  //write_eeprom();
-  //init_eeprom();
+  init_modbus();
   //tusb_init();
   Com1RxSemaphore = xSemaphoreCreateCounting(MAX_COM_QUEUE_LENGTH, 0);
   xTaskCreate(vPacketsManagerTask, "Packets_manager", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
   xTaskCreate(vJumpFirmware, "JumpFirmware", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-  //xTaskCreate(vInoutsTask, "Inouts", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
   vTaskStartScheduler();
 
   return 0;
@@ -36,7 +82,7 @@ void vJumpFirmware (void *pvParameters)
 {
   for(;;)
   {
-    vTaskDelay(3000 / portTICK_RATE_MS);
+    while(MODBUS_HR[MBHR_BOOTLOADER_STATUS] != BOOTLOADER_JUMP && msTick-jumpCounter < BOOTLOADER_JUMP_COUNTER);
     //выключаем периферию
     TIM_Cmd(TIM3, DISABLE);
     USART_Cmd(USART1, DISABLE);
@@ -67,26 +113,9 @@ void vJumpFirmware (void *pvParameters)
   }
 }
 //------------------------------------------------------------------------------
-void vInoutsTask (void *pvParameters)
-{
-  for(;;)
-  {
-    //MODBUS_HR[MBHR_DISCRETE_OUTPUTS_LOW] = MODBUS_HR[MBHR_DISCRETE_INPUTS_LOW];
-    while(MODBUS_HR[MBHR_TEST_VALUE] != 0)
-    {
-      SET_PIN_HIGH(COIL1_PORT,COIL1);
-      SET_PIN_LOW(COIL2_PORT,COIL2);
-      vTaskDelay(500 / portTICK_RATE_MS);
-      SET_PIN_LOW(COIL1_PORT,COIL1);
-      SET_PIN_HIGH(COIL2_PORT,COIL2);
-      vTaskDelay(500 / portTICK_RATE_MS);
-      MODBUS_HR[MBHR_TEST_VALUE]--;
-    }
-  }
-}
-//------------------------------------------------------------------------------
 void vApplicationTickHook( void )//вызывается каждую миллисекунду
 {
+  msTick++;
   return;
 }
 //------------------------------------------------------------------------------

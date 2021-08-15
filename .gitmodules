@@ -1,12 +1,15 @@
 [submodule "altium_libs"]
 	path = altium_libs
-	url = https://github.com/voodoojah/altium_libs.git
+	url = git@camradeling:camradeling/altium_libs.git
 [submodule "firmware/FreeRTOS-Kernel"]
 	path = firmware/FreeRTOS-Kernel
 	url = git@github.com:FreeRTOS/FreeRTOS-Kernel.git
 [submodule "firmware/Libraries/modbuslib"]
 	path = firmware/Libraries/modbuslib
-	url = git@github.com:voodoojah/modbuslib.git
+	url = git@camradeling:camradeling/modbuslib.git
 [submodule "firmware/Libraries/tinyusb"]
 	path = firmware/Libraries/tinyusb
 	url = https://github.com/hathach/tinyusb.git
+[submodule "fupdate/channellib"]
+	path = fupdate/channellib
+	url = git@camradeling:camradeling/channellib.git

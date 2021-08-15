@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "includes.h"
 #include "eeprom.h"
 //------------------------------------------------------------------------------
@@ -22,22 +23,69 @@ volatile uint32_t msTick=0;
 //------------------------------------------------------------------------------
 int is_readonly(uint16_t addr)
 {
-  switch(addr)
-  {
-  case MBHR_REG_FLASH_PAGE_SIZE:
-  case MBHR_REG_IN_UART_PACKS:
-  case MBHR_REG_IN_UART_PACKS_ERR:
-  {
-    return 1;
-  }
-  default:
-    return 0;  
-  }
-  return 0;
+	switch(addr)
+	{
+	case MBHR_REG_FLASH_PAGE_SIZE:
+	case MBHR_REG_IN_UART_PACKS:
+	case MBHR_REG_IN_UART_PACKS_ERR:
+	case MBHR_COMMAND_STATUS:
+	{
+		return 1;
+	}
+	default:
+		return 0;  
+	}
+	return 0;
+}
+//------------------------------------------------------------------------------
+int do_modbus_command()
+{
+	int res = 0;
+	MODBUS_HR[MBHR_COMMAND_STATUS] = COMMAND_STATUS_OK;
+	switch(MODBUS_HR[MBHR_REG_COMMAND])
+	{
+	case CMD_REBOOT:
+	{
+		REBOOT();
+		break;
+	}	
+	case CMD_WRITE_FIRMWARE_BLOCK:
+	{
+		uint16_t crctmp = calc_crc((uint8_t*)&MODBUS_HR[MBHR_WRITE_FLASH_BUF_0], MODBUS_HR[MBHR_FIRMWARE_BLOCK_LEN]);
+		if(crctmp != MODBUS_HR[MBHR_FIRMWARE_BLOCK_CRC])
+		{
+			MODBUS_HR[MBHR_COMMAND_STATUS] = COMMAND_STATUS_FAILED;
+			return -1;
+		}
+		//if address is aligned with flash page size - then erase page
+		bool erase = ((MODBUS_HR[MBHR_WRITE_FLASH_ADDR] & FLASH_PAGE_SIZE_MASK) == MODBUS_HR[MBHR_WRITE_FLASH_ADDR]) ? true: false;
+		res = write_firmware_block(FIRMWARE_START + MODBUS_HR[MBHR_WRITE_FLASH_ADDR],(uint8_t*)&MODBUS_HR[MBHR_WRITE_FLASH_BUF_0], \
+			MODBUS_HR[MBHR_FIRMWARE_BLOCK_LEN], erase);
+		if(res)
+			MODBUS_HR[MBHR_COMMAND_STATUS] = COMMAND_STATUS_FAILED;
+		break;
+	}
+	case CMD_START_FIRMWARE:
+	{
+		uint16_t crctmp = calc_crc((uint8_t*)FIRMWARE_START, MODBUS_HR[MBHR_FIRMWARE_FULL_LEN]);
+		if(crctmp != MODBUS_HR[MBHR_FIRMWARE_CRC16])
+		{
+			res = -1;
+			MODBUS_HR[MBHR_COMMAND_STATUS] = COMMAND_STATUS_FAILED;
+		}
+		else
+			MODBUS_HR[MBHR_BOOTLOADER_STATUS] = BOOTLOADER_JUMP;
+		break;
+	}
+	default:
+		break;	
+	}
+	return res;
 }
 //------------------------------------------------------------------------------
 int process_register(uint16_t addr)
 {
+	int res = 0;
   switch(addr)
   {
   case MBHR_BOOTLOADER_STATUS:
@@ -46,11 +94,16 @@ int process_register(uint16_t addr)
     write_eeprom();
     break;
   }
+  case MBHR_REG_COMMAND:
+  	res = do_modbus_command();
+  	if(res)
+  		return res;
+  	break;
   default:
     return 0;  
   }
   jumpCounter=msTick;
-  return 0;
+  return res;
 }
 //------------------------------------------------------------------------------
 void init_modbus()
@@ -83,6 +136,14 @@ void vJumpFirmware (void *pvParameters)
   for(;;)
   {
     while(MODBUS_HR[MBHR_BOOTLOADER_STATUS] != BOOTLOADER_JUMP && msTick-jumpCounter < BOOTLOADER_JUMP_COUNTER);
+    uint16_t crctmp = calc_crc((uint8_t*)FIRMWARE_START, MODBUS_HR[MBHR_FIRMWARE_FULL_LEN]);
+	if(crctmp != MODBUS_HR[MBHR_FIRMWARE_CRC16])
+	{
+		MODBUS_HR[MBHR_BOOTLOADER_STATUS] = BOOTLOADER_WAIT_30S;
+		MODBUS_HR[MBHR_COMMAND_STATUS] = COMMAND_STATUS_FAILED;
+		jumpCounter = msTick;
+		continue;
+	}
     //выключаем периферию
     TIM_Cmd(TIM3, DISABLE);
     USART_Cmd(USART1, DISABLE);

@@ -26,9 +26,9 @@
 #define INIT_COM_TIMER_CLOCK_DIVIDER BAUDRATE_115200_TIMER_CLOCK_DIVIDER
 #define comSTACK_SIZE				configMINIMAL_STACK_SIZE +1000
 //------------------------------------------------------------------------------
-#define CMD_WRITE_FLASH_PARAMETERS_BACKUP               5607
-#define CMD_REWRITE_FLASH                               5608
-#define CMD_REBOOT                                      6666
+#define CMD_WRITE_FIRMWARE_BLOCK		5607
+#define CMD_START_FIRMWARE				5608
+#define CMD_REBOOT						6666
 //------------------------------------------------------------------------------
 #define REBOOT()   SCB->AIRCR = 0x05FA0000 | (u32)0x04                                     
 //------------------------------------------------------------------------------

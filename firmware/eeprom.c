@@ -5,7 +5,9 @@
 #include "modbus.h"
 #include "eeprom.h"
 //-----------------------------------------------------------------------------------------------
-#define EEPROM_NUM_REGS					2
+#define EEPROM_BACKUP_START_REG			MBHR_REG_MY_MBADDR
+#define EEPROM_BACKUP_LAST_REG			MBHR_FIRMWARE_CRC16
+#define EEPROM_NUM_REGS					(EEPROM_BACKUP_LAST_REG - EEPROM_BACKUP_START_REG)
 //-----------------------------------------------------------------------------------------------
 extern uint16_t MODBUS_HR[];
 //-----------------------------------------------------------------------------------------------
@@ -97,7 +99,7 @@ int write_firmware_block(uint32_t addr, uint16_t* data, int len, int erase)
 //-----------------------------------------------------------------------------------------------
 int write_eeprom()
 {
-	int res = write_flash(EEPROM_START, &MODBUS_HR[MBHR_BOOTLOADER_STATUS], EEPROM_NUM_REGS*sizeof(uint16_t), 1);
+	int res = write_flash(EEPROM_START, &MODBUS_HR[EEPROM_BACKUP_START_REG], EEPROM_NUM_REGS*sizeof(uint16_t), 1);
 	if(res < 0)
 	{
 		for(int i = 0; i < EEPROM_NUM_REGS; i++)
@@ -109,7 +111,7 @@ int write_eeprom()
 int init_eeprom()
 {
 	for(int i = 0; i < EEPROM_NUM_REGS; i++)
-		MODBUS_HR[MBHR_BOOTLOADER_STATUS+i] = *(uint16_t*)(EEPROM_START + i*sizeof(uint16_t));
+		MODBUS_HR[EEPROM_BACKUP_START_REG+i] = *(uint16_t*)(EEPROM_START + i*sizeof(uint16_t));
 	return 0;
 }
 //-----------------------------------------------------------------------------------------------

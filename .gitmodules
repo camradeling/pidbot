@@ -13,3 +13,6 @@
 [submodule "fupdate/channellib"]
 	path = fupdate/channellib
 	url = git@camradeling:camradeling/channellib.git
+[submodule "fupdate/threadlib"]
+	path = fupdate/threadlib
+	url = git@github.com:camradeling/threadlib.git

@@ -21,7 +21,13 @@
 #define MBHR_SPACE_LAST_ADDR               MBHR_FIRMWARE_CRC16
 #define MBHR_SPACE_SIZE                    MBHR_SPACE_LAST_ADDR+1
 //------------------------------------------------------------------------------
+#define MAX_FIRMWARE_BLOCK_SIZE		(64*2)
 #define TXRX_BUFFER_SIZE 256
+#define MODBUS_03_DATASTART_IND		3
+//------------------------------------------------------------------------------
+#define CMD_WRITE_FIRMWARE_BLOCK		5607
+#define CMD_START_FIRMWARE				5608
+#define CMD_REBOOT						6666
 //------------------------------------------------------------------------------
 #define COMMAND_STATUS_OK			1
 #define COMMAND_STATUS_FAILED		0

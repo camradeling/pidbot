@@ -20,9 +20,11 @@ extern uint16_t* UsartErrors;
 //------------------------------------------------------------------------------
 uint32_t jumpCounter=0;
 volatile uint32_t msTick=0;
+SemaphoreHandle_t jumpMutex;
 //------------------------------------------------------------------------------
-int is_readonly(uint16_t addr)
+int is_writeable(uint16_t addr)
 {
+  jumpCounter=msTick;
 	switch(addr)
 	{
 	case MBHR_REG_FLASH_PAGE_SIZE:
@@ -30,12 +32,12 @@ int is_readonly(uint16_t addr)
 	case MBHR_REG_IN_UART_PACKS_ERR:
 	case MBHR_COMMAND_STATUS:
 	{
-		return 1;
+		return 0;
 	}
 	default:
-		return 0;  
+		return 1;  
 	}
-	return 0;
+	return 1;
 }
 //------------------------------------------------------------------------------
 int do_modbus_command()
@@ -59,25 +61,23 @@ int do_modbus_command()
 		}
 		//if address is aligned with flash page size - then erase page
 		bool erase = ((MODBUS_HR[MBHR_WRITE_FLASH_ADDR] & FLASH_PAGE_SIZE_MASK) == MODBUS_HR[MBHR_WRITE_FLASH_ADDR]) ? true: false;
-		res = write_firmware_block(FIRMWARE_START + MODBUS_HR[MBHR_WRITE_FLASH_ADDR],(uint8_t*)&MODBUS_HR[MBHR_WRITE_FLASH_BUF_0], \
-			MODBUS_HR[MBHR_FIRMWARE_BLOCK_LEN], erase);
-		if(res)
-			MODBUS_HR[MBHR_COMMAND_STATUS] = COMMAND_STATUS_FAILED;
-		break;
-	}
-	case CMD_START_FIRMWARE:
-	{
-		uint16_t crctmp = calc_crc((uint8_t*)FIRMWARE_START, MODBUS_HR[MBHR_FIRMWARE_FULL_LEN]);
-		if(crctmp != MODBUS_HR[MBHR_FIRMWARE_CRC16])
-		{
-			res = -1;
-			MODBUS_HR[MBHR_COMMAND_STATUS] = COMMAND_STATUS_FAILED;
-		}
+    if(xSemaphoreTake(jumpMutex,200)== pdTRUE)
+    {
+      res = write_firmware_block(FIRMWARE_START + MODBUS_HR[MBHR_WRITE_FLASH_ADDR],(uint8_t*)&MODBUS_HR[MBHR_WRITE_FLASH_BUF_0], \
+        MODBUS_HR[MBHR_FIRMWARE_BLOCK_LEN], erase);
+      if(res != 0)
+        MODBUS_HR[MBHR_COMMAND_STATUS] = COMMAND_STATUS_FAILED;
+      xSemaphoreGive(jumpMutex);
+    }
 		else
-			MODBUS_HR[MBHR_BOOTLOADER_STATUS] = BOOTLOADER_JUMP;
+    {
+      MODBUS_HR[MBHR_COMMAND_STATUS] = COMMAND_STATUS_FAILED;
+      res=-1;
+    }
 		break;
 	}
 	default:
+    res=-1;
 		break;	
 	}
 	return res;
@@ -90,19 +90,24 @@ int process_register(uint16_t addr)
   {
   case MBHR_BOOTLOADER_STATUS:
   case MBHR_REG_MY_MBADDR:
+  case MBHR_FIRMWARE_FULL_LEN:
+  case MBHR_FIRMWARE_CRC16:
   {
-    write_eeprom();
+    if(xSemaphoreTake(jumpMutex,200)== pdTRUE)
+    {
+        write_eeprom();
+        xSemaphoreGive(jumpMutex);
+    }
     break;
   }
   case MBHR_REG_COMMAND:
   	res = do_modbus_command();
-  	if(res)
-  		return res;
+    if(res)
+    	return res;
   	break;
   default:
     return 0;  
   }
-  jumpCounter=msTick;
   return res;
 }
 //------------------------------------------------------------------------------
@@ -118,11 +123,11 @@ void init_modbus()
 int main( void )
 {
   prvSetupHardware();
-  isregwrtbl_cb = &is_readonly;
+  isregwrtbl_cb = &is_writeable;
   regwr_cb = &process_register;
-
   init_modbus();
   //tusb_init();
+  jumpMutex = xSemaphoreCreateMutex();
   Com1RxSemaphore = xSemaphoreCreateCounting(MAX_COM_QUEUE_LENGTH, 0);
   xTaskCreate(vPacketsManagerTask, "Packets_manager", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
   xTaskCreate(vJumpFirmware, "JumpFirmware", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
@@ -135,15 +140,26 @@ void vJumpFirmware (void *pvParameters)
 {
   for(;;)
   {
-    while(MODBUS_HR[MBHR_BOOTLOADER_STATUS] != BOOTLOADER_JUMP && msTick-jumpCounter < BOOTLOADER_JUMP_COUNTER);
+    while(MODBUS_HR[MBHR_BOOTLOADER_STATUS] != BOOTLOADER_JUMP && msTick-jumpCounter < BOOTLOADER_JUMP_COUNTER)
+    {
+      vTaskDelay(50 / portTICK_RATE_MS);
+      MODBUS_HR[MBHR_BOOTLOADER_COUNTDOWN] = BOOTLOADER_JUMP_COUNTER - (msTick-jumpCounter);
+    }
+    xSemaphoreTake(jumpMutex,portMAX_DELAY);
     uint16_t crctmp = calc_crc((uint8_t*)FIRMWARE_START, MODBUS_HR[MBHR_FIRMWARE_FULL_LEN]);
-	if(crctmp != MODBUS_HR[MBHR_FIRMWARE_CRC16])
-	{
-		MODBUS_HR[MBHR_BOOTLOADER_STATUS] = BOOTLOADER_WAIT_30S;
-		MODBUS_HR[MBHR_COMMAND_STATUS] = COMMAND_STATUS_FAILED;
-		jumpCounter = msTick;
-		continue;
-	}
+  	if(crctmp != MODBUS_HR[MBHR_FIRMWARE_CRC16])
+  	{
+  		MODBUS_HR[MBHR_BOOTLOADER_STATUS] = BOOTLOADER_WAIT_30S;
+  		MODBUS_HR[MBHR_COMMAND_STATUS] = COMMAND_STATUS_FAILED;
+  		jumpCounter = msTick;
+      xSemaphoreGive(jumpMutex);
+  		continue;
+  	}
+    if(MODBUS_HR[MBHR_BOOTLOADER_STATUS] != BOOTLOADER_JUMP)
+    {
+      MODBUS_HR[MBHR_BOOTLOADER_STATUS] = BOOTLOADER_JUMP;
+      write_eeprom();
+    }
     //выключаем периферию
     TIM_Cmd(TIM3, DISABLE);
     USART_Cmd(USART1, DISABLE);

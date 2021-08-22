@@ -14,10 +14,11 @@
 #define MBHR_FIRMWARE_BLOCK_CRC     71
 #define MBHR_REG_COMMAND            72
 #define MBHR_COMMAND_STATUS         73
-#define MBHR_REG_MY_MBADDR          74
-#define MBHR_BOOTLOADER_STATUS      75
-#define MBHR_FIRMWARE_FULL_LEN      76
-#define MBHR_FIRMWARE_CRC16         77
+#define MBHR_BOOTLOADER_COUNTDOWN   74
+#define MBHR_REG_MY_MBADDR          75
+#define MBHR_BOOTLOADER_STATUS      76
+#define MBHR_FIRMWARE_FULL_LEN      77
+#define MBHR_FIRMWARE_CRC16         78
 #define MBHR_SPACE_LAST_ADDR               MBHR_FIRMWARE_CRC16
 #define MBHR_SPACE_SIZE                    MBHR_SPACE_LAST_ADDR+1
 //------------------------------------------------------------------------------
@@ -34,7 +35,7 @@
 //------------------------------------------------------------------------------
 #define BOOTLOADER_JUMP				0
 #define BOOTLOADER_WAIT_30S			1
-#define FIRMARE_RUNNING				2
+#define FIRMWARE_RUNNING			2
 //------------------------------------------------------------------------------
 #define BOOTLOADER_JUMP_COUNTER     30000
 //------------------------------------------------------------------------------

@@ -37,16 +37,20 @@ int main(int argc, char* argv[])
                 break;
             case 'i':
                 filename = string(optarg);
+                break;
             case 'c':
                 configfile = string(optarg);
-                return 0;
+                break;
             case '?':
                 fprintf(stderr, "unknown option: %c\n", option_index);
                 break;
         }
     }
     if(filename == "")
+    {
+        fprintf(stderr, "no firmware file provided\n");
         return -1;
+    }
 	if(configfile == "")
     {
         filename = string(defaultConf);
@@ -72,12 +76,14 @@ int main(int argc, char* argv[])
         confok = 0;
         return -1;
     }
+    fprintf(stderr, "config file valid\n");
     std::ifstream input( filename, std::ios::binary );
 
     // copies all data into buffer
     std::vector<uint8_t> firmware(std::istreambuf_iterator<char>(input), {});
     if(firmware.size() <= 0)
         return -1;
+    fprintf(stderr, "firmware file read, data size = %08X\n",firmware.size());
     shared_ptr<FUpdater> fupd = shared_ptr<FUpdater>(new FUpdater(tree));
     fupd->firmware = &firmware;
     fupd->init_module();

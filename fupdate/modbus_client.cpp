@@ -123,7 +123,7 @@ vector<uint8_t> ModbusClient::build_write_multreg_16(uint8_t addr, uint16_t star
 {
   vector<uint8_t> data;
   data.push_back(addr);
-  data.push_back(0x16);
+  data.push_back(0x10);
   data.push_back((startreg & 0xff00) >> 8);
   data.push_back(startreg & 0x00ff);
   data.push_back(vals.size());

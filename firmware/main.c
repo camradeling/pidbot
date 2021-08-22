@@ -18,7 +18,7 @@ extern uint16_t* UsartErrors;
 //------------------------------------------------------------------------------
 volatile uint32_t msTick=0;
 //------------------------------------------------------------------------------
-int is_readonly(uint16_t addr)
+int is_writeable(uint16_t addr)
 {
   switch(addr)
   {
@@ -26,12 +26,30 @@ int is_readonly(uint16_t addr)
   case MBHR_REG_IN_UART_PACKS:
   case MBHR_REG_IN_UART_PACKS_ERR:
   {
-    return 1;
+    return 0;
   }
   default:
-    return 0;  
+    return 1;  
   }
-  return 0;
+  return 1;
+}
+//------------------------------------------------------------------------------
+int firmware_modbus_command()
+{
+  int res = 0;
+  MODBUS_HR[MBHR_COMMAND_STATUS] = COMMAND_STATUS_OK;
+  switch(MODBUS_HR[MBHR_REG_COMMAND])
+  {
+  case CMD_REBOOT:
+  {
+    REBOOT();
+    break;
+  } 
+  default:
+    res=-1;
+    break;  
+  }
+  return res;
 }
 //------------------------------------------------------------------------------
 int process_register(uint16_t addr)
@@ -44,6 +62,9 @@ int process_register(uint16_t addr)
     write_eeprom();
     break;
   }
+  case MBHR_REG_COMMAND:
+    firmware_modbus_command();
+    break;
   default:
     return 0;  
   }
@@ -57,13 +78,13 @@ void init_modbus()
   UsartErrors = &MODBUS_HR[MBHR_REG_IN_UART_PACKS_ERR];
   MODBUS_HR[MBHR_REG_FLASH_PAGE_SIZE] = FLASH_PAGE_SIZE;
   init_eeprom();
-  MODBUS_HR[MBHR_BOOTLOADER_STATUS] = FIRMARE_RUNNING;
+  MODBUS_HR[MBHR_BOOTLOADER_STATUS] = FIRMWARE_RUNNING;
 }
 //------------------------------------------------------------------------------
 int main( void )
 {
   prvSetupHardware();
-  isregwrtbl_cb = &is_readonly;
+  isregwrtbl_cb = &is_writeable;
   regwr_cb = &process_register;
   init_modbus();
   //tusb_init();

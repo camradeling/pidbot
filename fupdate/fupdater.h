@@ -12,6 +12,8 @@
 enum WorkState
 {
 	INITIAL_STATE = 0,
+	CHECK_BL_STATUS_SENT,
+	SWITCH_TO_BL_SENT,
 	FIRMWARE_BLOCK_SENT,
 	FIRMWARE_WRITECRC_SENT,
 	FIRMWARE_START_SENT,
@@ -42,8 +44,12 @@ public:
 	virtual void init_module();
 	virtual void thread_job();
 	void process_channel(weak_ptr<BasicChannel> chan);
+	vector<uint8_t> get_packet();
 	void process_packet(uint8_t* data, int len);
 	int send_one_more_block();
+	int send_switch_to_bootloader();
+	int send_sysreset();
+	vector<uint8_t> InStream;
 	shared_ptr<ModbusClient> MBCL;
 	shared_ptr<ChanPool> CHPL;
 	vector<Session> sessionsActive;
@@ -54,6 +60,7 @@ public:
 	timespec_t packSentStamp={0,0};
 	WorkState state = INITIAL_STATE;
 	WorkState lastState = INITIAL_STATE;
+	uint16_t BlStatus=FIRMWARE_RUNNING;
 };
 //----------------------------------------------------------------------------------------------------------------------
 #endif/*FUPDATER_H*/

@@ -126,7 +126,7 @@ int main( void )
   isregwrtbl_cb = &is_writeable;
   regwr_cb = &process_register;
   init_modbus();
-  //tusb_init();
+  tusb_init();
   jumpMutex = xSemaphoreCreateMutex();
   Com1RxSemaphore = xSemaphoreCreateCounting(MAX_COM_QUEUE_LENGTH, 0);
   xTaskCreate(vPacketsManagerTask, "Packets_manager", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);

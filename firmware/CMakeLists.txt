@@ -22,6 +22,7 @@ else()
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2 -Os -s")
 endif()
 add_definitions(-DSTM32F10X_MD)
+add_definitions(-DSTM32F103x6)
 message(STATUS "CMAKE_C_FLAGS ${CMAKE_C_FLAGS}")
 add_custom_target(USAGE
         ${CMAKE_SOURCE_DIR}/usage.sh ${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map)
@@ -47,6 +48,10 @@ set(PeripheralSources
 
 set(USBSources
         ${PROJECT_SOURCE_DIR}/Libraries/tinyusb/src/tusb.c
+        ${PROJECT_SOURCE_DIR}/Libraries/tinyusb/src/common/tusb_fifo.c
+        ${PROJECT_SOURCE_DIR}/Libraries/tinyusb/src/device/usbd.c
+        ${PROJECT_SOURCE_DIR}/Libraries/tinyusb/src/device/usbd_control.c
+        ${PROJECT_SOURCE_DIR}/Libraries/tinyusb/src/class/cdc/cdc_device.c
         ${PROJECT_SOURCE_DIR}/Libraries/tinyusb/src/portable/st/stm32_fsdev/dcd_stm32_fsdev.c
         )
 
@@ -60,7 +65,7 @@ set(Firmware_Sources
         stm32f10x_vector.c
         ${FreeRTOSSources}
         ${PeripheralSources}
-        #${USBSources}
+        ${USBSources}
         )
 
 set(Bootloader_Sources
@@ -73,7 +78,7 @@ set(Bootloader_Sources
         stm32f10x_vector.c
         ${FreeRTOSSources}
         ${PeripheralSources}
-        #${USBSources}
+        ${USBSources}
         )
 #############################################################
 ####### pidbot options ######################################

@@ -30,13 +30,14 @@
 //------------------------------------------------------------------------------
 #define SET_PIN_HIGH(PORT,PIN) PORT->ODR |= (1 << PIN);
 #define SET_PIN_LOW(PORT,PIN)  PORT->ODR &=~(1 << PIN);
-#define SET_PIN_OUTPUT_PP(PORT,PIN) if(PIN>=8) {PORT->CRH&=~(0x0f<<((PIN-8) << 2));PORT->CRH|=(0x03<<((PIN-8) << 2));}else{PORT->CRL&=~(0x0f<<(PIN << 2));PORT->CRL|=(0x03<<(PIN << 2));}
-#define SET_PIN_OUTPUT_OD(PORT,PIN) if(PIN >= 8){ PORT->CRH &=~ (0x0f << ((PIN - 8) << 2)); PORT->CRH |= (0x07 << ((PIN - 8) << 2));} \
-  else{ PORT->CRL &=~ (0x0f << (PIN << 2)); PORT->CRL |= (0x07 << (PIN << 2));}
-#define SET_PIN_INPUT(PORT,PIN) if(PIN >= 8){ PORT->CRH &=~ (0x0f << ((PIN - 8) << 2)); PORT->CRH |= (0x04 << ((PIN - 8) << 2));} \
-  else{ PORT->CRL &=~ (0x0f << (PIN << 2)); PORT->CRL |= (0x04 << (PIN << 2));}
-#define SET_PIN_ALTMODE_PP(PORT,PIN) if(PIN >= 8){ PORT->CRH &=~ (0x0f << ((PIN - 8) << 2)); PORT->CRH |= (0x0B << ((PIN - 8) << 2));} \
-  else{ PORT->CRL &=~ (0x0f << (PIN << 2)); PORT->CRL |= (0x0B << (PIN << 2));}
+#define SET_PIN_OUTPUT_PP(PORT,PIN) if(PIN>=8) {PORT->CRH&=~((uint32_t)0x0f<<((PIN%8) << 2));PORT->CRH|=((uint32_t)0x03<<((PIN%8) << 2));} \
+							else{PORT->CRL&=~((uint32_t)0x0f<<((PIN%8) << 2));PORT->CRL|=((uint32_t)0x03<<((PIN%8) << 2));}
+#define SET_PIN_OUTPUT_OD(PORT,PIN) if(PIN >= 8){ PORT->CRH &=~ ((uint32_t)0x0f << ((PIN%8) << 2)); PORT->CRH |= ((uint32_t)0x07 << ((PIN%8) << 2));} \
+  							else{ PORT->CRL &=~ ((uint32_t)0x0f << ((PIN%8) << 2)); PORT->CRL |= ((uint32_t)0x07 << ((PIN%8) << 2));}
+#define SET_PIN_INPUT(PORT,PIN) if(PIN >= 8){ PORT->CRH &=~ ((uint32_t)0x0f << ((PIN%8) << 2)); PORT->CRH |= ((uint32_t)0x04 << ((PIN%8) << 2));} \
+  							else{ PORT->CRL &=~ ((uint32_t)0x0f << ((PIN%8) << 2)); PORT->CRL |= ((uint32_t)0x04 << ((PIN%8) << 2));}
+#define SET_PIN_ALTMODE_PP(PORT,PIN) if(PIN >= 8){ PORT->CRH &=~ ((uint32_t)0x0f << ((PIN%8) << 2)); PORT->CRH |= ((uint32_t)0x0B << ((PIN%8) << 2));} \
+  							else{ PORT->CRL &=~ ((uint32_t)0x0f << ((PIN%8) << 2)); PORT->CRL |= ((uint32_t)0x0B << ((PIN%8) << 2));}
 #define ISHIGH(PORT,PIN) (PORT->ODR & (1 << PIN))?1:0                                           
 //------------------------------------------------------------------------------
 #define GPIO_TO_INT(GPIO) (((uint32_t)(&(GPIO->CRL)) - GPIOA_BASE)>>10);

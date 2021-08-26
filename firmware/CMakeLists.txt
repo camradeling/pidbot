@@ -102,7 +102,7 @@ add_custom_command(TARGET ${PROJECT_NAME}.elf POST_BUILD
         )
 add_dependencies(${PROJECT_NAME}.elf USAGE)
 #############################################################
-####### pidbot options ######################################
+####### bootloader options ##################################
 add_executable(bootloader.elf ${Bootloader_Sources} ${PROJECT_SOURCE_DIR}/${BOOTLOADER_LINKER_SCRIPT})
 set(BOOTLOADER_LINKER_SCRIPT stm32f103md_bootloader.ld)
 target_link_options(bootloader.elf PUBLIC "SHELL:-T ${PROJECT_SOURCE_DIR}/${BOOTLOADER_LINKER_SCRIPT} -Wl,-Map=${PROJECT_BINARY_DIR}/bootloader.map -Wl,--gc-sections")

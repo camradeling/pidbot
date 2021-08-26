@@ -1,58 +1,85 @@
-/**
-  ******************************************************************************
-  * @file    stm32f1xx_ll_usb.h
-  * @author  MCD Application Team
-  * @brief   Header file of USB Low Layer HAL module.
-  ******************************************************************************
-  * @attention
-  *
-  * <h2><center>&copy; Copyright (c) 2016 STMicroelectronics.
-  * All rights reserved.</center></h2>
-  *
-  * This software component is licensed by ST under BSD 3-Clause license,
-  * the "License"; You may not use this file except in compliance with the
-  * License. You may obtain a copy of the License at:
-  *                        opensource.org/licenses/BSD-3-Clause
-  *
-  ******************************************************************************
-  */
 
-/* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef STM32F1xx_LL_USB_H
 #define STM32F1xx_LL_USB_H
-
+//------------------------------------------------------------------------------
+#include "stm32f10x.h"
+//------------------------------------------------------------------------------
 #ifdef __cplusplus
 extern "C" {
 #endif
+//------------------------------------------------------------------------------ 
+// Endpoint bit positions
+#define USB_EP_CTR_RX      (uint32_t)0x00008000 // Correct TRansfer RX
+#define USB_EP_DTOG_RX     (uint32_t)0x00004000 // Data TOGGLE RX
+#define USB_EPRX_STAT      (uint32_t)0x00003000 // RX STATus bit field
+#define USB_EP_SETUP       (uint32_t)0x00000800 // SETUP
+#define USB_EP_T_FIELD     (uint32_t)0x00000600 // TYPE
+#define USB_EP_KIND        (uint32_t)0x00000100 // KIND
+#define USB_EP_CTR_TX      (uint32_t)0x00000080 // EndPoint Correct TRansfer TX
+#define USB_EP_DTOG_TX     (uint32_t)0x00000040 // Data TOGGLE TX
+#define USB_EPTX_STAT      (uint32_t)0x00000030 // TX STATus bit field
+#define USB_EPADDR_FIELD   (uint32_t)0x0000000F // ADDRess FIELD
 
-/* Includes ------------------------------------------------------------------*/
-//#include "stm32f1xx_hal_def.h"
+// EndPoint register MASK (no toggle fields)
+#define USB_EP_TYPE_MASK   (uint32_t)0x00000600 // TYPE Mask
+#define USB_EP_T_MASK      (~USB_EP_T_FIELD & USB_EPREG_MASK)
+// EP_TYPE[1:0] endpoint type
+#define USB_EPREG_MASK     (USB_EP_CTR_RX | USB_EP_SETUP | USB_EP_T_FIELD |USB_EP_KIND |USB_EP_CTR_TX | USB_EPADDR_FIELD)
+
+// EP_KIND endpoint KIND
+#define USB_EPKIND_MASK    (~USB_EP_KIND & USB_EPREG_MASK)
+//------------------------------------------------------------------------------
 #define HAL_StatusTypeDef int
-#define USB_BASE   ((uint32_t)0x40005C00)
-#define USB      ((USB_TypeDef *)USB_BASE)
+#define USB_BASE            (APB1PERIPH_BASE + 0x5C00)
+#define USB_PMA_BASE        (APB1PERIPH_BASE + 0x6000)
 #define USB_PMAADDR   (APB1PERIPH_BASE + 0x00006000UL)
+#define EP0R EPR[0]  
 
+#define USB                 ((USB_TypeDef *) USB_BASE)
+
+#define USB_EP_BULK         0
+#define USB_EP_CONTROL      USB_EP0R_EP_TYPE_0
+#define USB_EP_ISOCHRONOUS  USB_EP0R_EP_TYPE_1
+#define USB_EP_INTERRUPT    (USB_EP0R_EP_TYPE_0 | USB_EP0R_EP_TYPE_1)
+
+#define USB_EP_TX_DIS       0
+#define USB_EP_TX_STALL     USB_EP0R_STAT_TX_0
+#define USB_EP_TX_NAK       USB_EP0R_STAT_TX_1
+#define USB_EP_TX_VALID     (USB_EP0R_STAT_TX_0 | USB_EP0R_STAT_TX_1)
+#define USB_EPTX_DTOG1     (uint32_t)0x00000010 // TX data toggle bit1
+#define USB_EPTX_DTOG2     (uint32_t)0x00000020 // TX data toggle bit2
+#define USB_EPTX_DTOGMASK  (USB_EPTX_STAT | USB_EPREG_MASK)
+
+#define USB_EP_RX_DIS       0
+#define USB_EP_RX_STALL     USB_EP0R_STAT_RX_0
+#define USB_EP_RX_NAK       USB_EP0R_STAT_RX_1
+#define USB_EP_RX_VALID     (USB_EP0R_STAT_RX_0 | USB_EP0R_STAT_RX_1)
+#define USB_EPRX_DTOG1     (uint32_t)0x00001000 // RX data toggle bit1
+#define USB_EPRX_DTOG2     (uint32_t)0x00002000 // RX data toggle bit2
+#define USB_EPRX_DTOGMASK  (USB_EPRX_STAT | USB_EPREG_MASK)
+
+// non toggle fields
+#define USB_EP_NT           (USB_EP0R_CTR_RX | USB_EP0R_SETUP | USB_EP0R_EP_TYPE \
+                             | USB_EP0R_EP_KIND | USB_EP0R_CTR_TX | USB_EP0R_EA)  
+//------------------------------------------------------------------------------
 #if defined (USB) || defined (USB_OTG_FS)
+//------------------------------------------------------------------------------
+#define     __IO    volatile
+//#define     __I    volatile
+#define     __O    volatile
+//------------------------------------------------------------------------------
 
-//------------------------------
-  #define     __IO    volatile
-  #define     __I    volatile
-  #define     __O    volatile
-    
-
-    typedef struct {
-       uint32_t EPR[8];
-       uint32_t RESERVED[8];
-       uint32_t CNTR;
-       uint32_t ISTR;
-       uint32_t FNR;
-       uint32_t DADDR;
-       uint32_t BTABLE;
-    }USB_TypeDef;
-
-    
-    //------------------------------
-
+//------------------------------------------------------------------------------
+  typedef struct {
+     uint32_t EPR[8];
+     uint32_t RESERVED[8];
+     uint32_t CNTR;
+     uint32_t ISTR;
+     uint32_t FNR;
+     uint32_t DADDR;
+     uint32_t BTABLE;
+  }USB_TypeDef;
+//------------------------------------------------------------------------------
 /**
   * @brief  USB Mode definition
   */

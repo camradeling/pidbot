@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include "includes.h"
 #include "eeprom.h"
+#include "tusb.h"
 //------------------------------------------------------------------------------
 /*Configure the clocks, GPIO and other peripherals */
 static void prvSetupHardware( void );
@@ -63,7 +64,7 @@ int do_modbus_command()
 		bool erase = ((MODBUS_HR[MBHR_WRITE_FLASH_ADDR] & FLASH_PAGE_SIZE_MASK) == MODBUS_HR[MBHR_WRITE_FLASH_ADDR]) ? true: false;
     if(xSemaphoreTake(jumpMutex,200)== pdTRUE)
     {
-      res = write_firmware_block(FIRMWARE_START + MODBUS_HR[MBHR_WRITE_FLASH_ADDR],(uint8_t*)&MODBUS_HR[MBHR_WRITE_FLASH_BUF_0], \
+      res = write_firmware_block(FIRMWARE_START + MODBUS_HR[MBHR_WRITE_FLASH_ADDR],&MODBUS_HR[MBHR_WRITE_FLASH_BUF_0], \
         MODBUS_HR[MBHR_FIRMWARE_BLOCK_LEN], erase);
       if(res != 0)
         MODBUS_HR[MBHR_COMMAND_STATUS] = COMMAND_STATUS_FAILED;

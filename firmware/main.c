@@ -2,6 +2,11 @@
 #include "eeprom.h"
 #include "tusb.h"
 //------------------------------------------------------------------------------
+#define USBD_STACK_SIZE     (3*configMINIMAL_STACK_SIZE/2)
+//------------------------------------------------------------------------------
+StackType_t  usb_device_stack[USBD_STACK_SIZE];
+StaticTask_t usb_device_taskdef;
+//------------------------------------------------------------------------------
 /*Configure the clocks, GPIO and other peripherals */
 static void prvSetupHardware( void );
 //------------------------------------------------------------------------------
@@ -81,16 +86,35 @@ void init_modbus()
   MODBUS_HR[MBHR_BOOTLOADER_STATUS] = FIRMWARE_RUNNING;
 }
 //------------------------------------------------------------------------------
+// USB Device Driver task
+// This top level thread process all usb events and invoke callbacks
+void usb_device_task(void* param)
+{
+  (void) param;
+
+  // This should be called after scheduler/kernel is started.
+  // Otherwise it could cause kernel issue since USB IRQ handler does use RTOS queue API.
+  tusb_init();
+
+  // RTOS forever loop
+  while (1)
+  {
+    // tinyusb device task
+    tud_task();
+  }
+}
+//------------------------------------------------------------------------------
 int main( void )
 {
   prvSetupHardware();
   isregwrtbl_cb = &is_writeable;
   regwr_cb = &process_register;
   init_modbus();
-  tusb_init();
   Com1RxSemaphore = xSemaphoreCreateCounting(MAX_COM_QUEUE_LENGTH, 0);
   xTaskCreate(vPacketsManagerTask, "Packets_manager", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
-  //xTaskCreate(vInoutsTask, "Inouts", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+  // Create a task for tinyusb device stack
+  xTaskCreateStatic( usb_device_task, "usbd", USBD_STACK_SIZE, NULL, configMAX_PRIORITIES-1, usb_device_stack, &usb_device_taskdef);
+  xTaskCreate(vInoutsTask, "Inouts", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
   vTaskStartScheduler();
 
   return 0;
@@ -98,13 +122,10 @@ int main( void )
 //------------------------------------------------------------------------------
 void vInoutsTask (void *pvParameters)
 {
+  SET_PIN_HIGH(COIL1_PORT,COIL1);
+  SET_PIN_HIGH(COIL2_PORT,COIL2);
   for(;;)
-  {
-    SET_PIN_HIGH(COIL1_PORT,COIL1);
-    SET_PIN_LOW(COIL2_PORT,COIL2);
-    vTaskDelay(500 / portTICK_RATE_MS);
-    SET_PIN_LOW(COIL1_PORT,COIL1);
-    SET_PIN_HIGH(COIL2_PORT,COIL2);
+  {  
     vTaskDelay(500 / portTICK_RATE_MS);
   }
 }

@@ -131,6 +131,21 @@ int init_eeprom()
 {
 	for(int i = 0; i < EEPROM_NUM_REGS; i++)
 		MODBUS_HR[EEPROM_BACKUP_START_REG+i] = *(uint16_t*)(EEPROM_START + i*sizeof(uint16_t));
+	uint8_t inited=0;
+	for(int i = 0; i < EEPROM_NUM_REGS; i++)
+	{
+		if(MODBUS_HR[EEPROM_BACKUP_START_REG+i] != 0xffff)
+		{
+			inited=1;
+			break;
+		}
+	}
+	if(!inited)
+	{
+		MODBUS_HR[MBHR_REG_MY_MBADDR] = 1;
+		MODBUS_HR[MBHR_BOOTLOADER_STATUS] = BOOTLOADER_JUMP;
+		write_eeprom();
+	}
 	return 0;
 }
 //-----------------------------------------------------------------------------------------------

@@ -3,6 +3,11 @@
 #include "eeprom.h"
 #include "tusb.h"
 //------------------------------------------------------------------------------
+#define USBD_STACK_SIZE     (3*configMINIMAL_STACK_SIZE/2)
+//------------------------------------------------------------------------------
+StackType_t  usb_device_stack[USBD_STACK_SIZE];
+StaticTask_t usb_device_taskdef;
+//------------------------------------------------------------------------------
 /*Configure the clocks, GPIO and other peripherals */
 static void prvSetupHardware( void );
 //------------------------------------------------------------------------------
@@ -121,17 +126,35 @@ void init_modbus()
   init_eeprom();
 }
 //------------------------------------------------------------------------------
+// USB Device Driver task
+// This top level thread process all usb events and invoke callbacks
+void usb_device_task(void* param)
+{
+  (void) param;
+
+  // This should be called after scheduler/kernel is started.
+  // Otherwise it could cause kernel issue since USB IRQ handler does use RTOS queue API.
+  tusb_init();
+
+  // RTOS forever loop
+  while (1)
+  {
+    // tinyusb device task
+    tud_task();
+  }
+}
+//------------------------------------------------------------------------------
 int main( void )
 {
   prvSetupHardware();
-  isregwrtbl_cb = &is_writeable;
-  regwr_cb = &process_register;
-  init_modbus();
-  tusb_init();
-  jumpMutex = xSemaphoreCreateMutex();
+  //isregwrtbl_cb = &is_writeable;
+  //regwr_cb = &process_register;
+  //init_modbus();
+  //jumpMutex = xSemaphoreCreateMutex();
   Com1RxSemaphore = xSemaphoreCreateCounting(MAX_COM_QUEUE_LENGTH, 0);
-  xTaskCreate(vPacketsManagerTask, "Packets_manager", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
-  xTaskCreate(vJumpFirmware, "JumpFirmware", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+  //xTaskCreate(vPacketsManagerTask, "Packets_manager", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
+  //xTaskCreate(vJumpFirmware, "JumpFirmware", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+  xTaskCreateStatic( usb_device_task, "usbd", USBD_STACK_SIZE, NULL, configMAX_PRIORITIES-1, usb_device_stack, &usb_device_taskdef);
   vTaskStartScheduler();
 
   return 0;
@@ -194,6 +217,17 @@ void vJumpFirmware (void *pvParameters)
 void vApplicationTickHook( void )//вызывается каждую миллисекунду
 {
   msTick++;
+  if((msTick%500) == 0)
+  {
+    if(GPIOB->IDR & (1 << 5))
+    {
+      SET_PIN_LOW(GPIOB,5);
+    }
+    else
+    {
+      SET_PIN_HIGH(GPIOB,5);
+    }
+  }
   return;
 }
 //------------------------------------------------------------------------------

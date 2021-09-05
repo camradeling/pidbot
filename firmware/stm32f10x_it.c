@@ -1,4 +1,5 @@
 #include "includes.h"
+#include "usbd.h"
 //------------------------------------------------------------------------------
 extern void TimingDelay_Decrement(void);
 //------------------------------------------------------------------------------
@@ -150,10 +151,12 @@ void ADC_IRQHandler(void)
 //------------------------------------------------------------------------------
 void USB_HP_CAN_TX_IRQHandler(void)
 {
+  tud_int_handler(BOARD_DEVICE_RHPORT_NUM);
 }
 //------------------------------------------------------------------------------
 void USB_LP_CAN_RX0_IRQHandler(void)
 {
+  tud_int_handler(BOARD_DEVICE_RHPORT_NUM);
 }
 //------------------------------------------------------------------------------
 void CAN_RX1_IRQHandler(void)

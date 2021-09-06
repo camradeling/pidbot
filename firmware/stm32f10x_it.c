@@ -189,15 +189,15 @@ void TIM1_TRG_COM_IRQHandler(void)
 //------------------------------------------------------------------------------
 void TIM2_IRQHandler(void)
 {
-  TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
+  //TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
 }
 //------------------------------------------------------------------------------
 uint32_t timerOVF = 0;
 //------------------------------------------------------------------------------
 void TIM3_IRQHandler(void)
 {
-  timerOVF++;
-  TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
+  //timerOVF++;
+  //TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
 }
 //------------------------------------------------------------------------------
 void TIM4_IRQHandler(void)
@@ -250,6 +250,7 @@ void RTCAlarm_IRQHandler(void)
 //------------------------------------------------------------------------------
 void USBWakeUp_IRQHandler(void)
 {
+  tud_int_handler(BOARD_DEVICE_RHPORT_NUM);
 }
 //------------------------------------------------------------------------------
 

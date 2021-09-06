@@ -217,7 +217,7 @@ void vJumpFirmware (void *pvParameters)
 void vApplicationTickHook( void )//вызывается каждую миллисекунду
 {
   msTick++;
-  if((msTick%500) == 0)
+  /*if((msTick%500) == 0)
   {
     if(GPIOB->IDR & (1 << 5))
     {
@@ -227,7 +227,7 @@ void vApplicationTickHook( void )//вызывается каждую милли�
     {
       SET_PIN_HIGH(GPIOB,5);
     }
-  }
+  }*/
   return;
 }
 //------------------------------------------------------------------------------
@@ -281,21 +281,23 @@ static void prvSetupHardware( void )
   
   RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM1, ENABLE);
   //пока что для отладки
-  RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);   
+  /*RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);   
   TIM_TimeBaseInitTypeDef timerInitStructure;
   timerInitStructure.TIM_Prescaler = 35;
   timerInitStructure.TIM_CounterMode = TIM_CounterMode_Up;
   timerInitStructure.TIM_Period = 0xffff;
   timerInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;
   TIM_TimeBaseInit(TIM3, &timerInitStructure);
-  TIM_Cmd(TIM3, ENABLE);
+  TIM_Cmd(TIM3, ENABLE);*/
+  RCC_APB1PeriphClockCmd(RCC_APB1Periph_USB, ENABLE);
+
   
   //run led
   SET_PIN_LOW(GPIOB,5);
   SET_PIN_OUTPUT_PP(GPIOB,5);
   SET_PIN_HIGH(GPIOB,5);
   //coil pins
-  SET_PIN_LOW(GPIOB,15);//coil 1
+  /*SET_PIN_LOW(GPIOB,15);//coil 1
   SET_PIN_OUTPUT_PP(GPIOB,15);
   SET_PIN_LOW(GPIOB,14);//coil 2
   SET_PIN_OUTPUT_PP(GPIOB,14);
@@ -344,7 +346,7 @@ static void prvSetupHardware( void )
   NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = configLIBRARY_KERNEL_INTERRUPT_PRIORITY;
   NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0; //Not used as 4 bits are used for the pre-emption priority. 
   NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-  NVIC_Init( &NVIC_InitStructure );
+  NVIC_Init( &NVIC_InitStructure );*/
 }
 //------------------------------------------------------------------------------
 #ifdef  DEBUG

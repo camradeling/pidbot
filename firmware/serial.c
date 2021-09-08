@@ -5,10 +5,10 @@ uint16_t* UsartErrors=NULL;
 //------------------------------------------------------------------------------
 void USART1_IRQHandler(void)
 {
-  if(USART_GetITStatus(USART1, USART_IT_TC) == SET)
+  if(USART1->SR & USART_SR_TC)
   {
-    USART_ClearITPendingBit(USART1, USART_IT_TC);
-    USART_ITConfig(USART1, USART_IT_TC, DISABLE);
+    USART1->SR &=~ USART_SR_TC;
+    USART1->CR1 &=~ USART_CR1_TCIE;
     DMA_USART_prepare_recieve();
     transmitActive = 0;
   }
@@ -48,22 +48,16 @@ void TIM1_UP_IRQHandler(void)//прерывание по досчету тайм
 //------------------------------------------------------------------------------
 void DMAChannel4_IRQHandler(void)
 {
-  if(DMA_GetITStatus( DMA1_IT_TC4 ) == SET)
-  {
-    DMA_Cmd(DMA1_Channel4, DISABLE);
-    DMA_ClearITPendingBit(DMA1_IT_GL4);
-    USART_ClearITPendingBit(USART1, USART_IT_TC);
-    USART_ITConfig(USART1, USART_IT_TC, ENABLE);
-  }
+    DMA1_Channel4->CCR &=~ DMA_CCR1_EN;
+    DMA1->IFCR |= DMA1_IT_GL4;
+    USART1->SR &=~ USART_SR_TC;
+    USART1->CR1 |= USART_CR1_TCIE;
 }
 //------------------------------------------------------------------------------
 void DMAChannel5_IRQHandler(void)
 {//TODO дописать обработку события, что принято максимальное кол-во байт
   //и продолжают приходить еще
-  if(DMA_GetITStatus( DMA1_IT_TC5 ) == SET)
-  {
-    DMA_ClearITPendingBit(DMA1_IT_GL5);
-  }
+    DMA1->IFCR |= DMA1_IT_GL5;
 }
 //------------------------------------------------------------------------------
 void DMA_USART_prepare_transmit(uint8_t length)
@@ -81,8 +75,8 @@ void DMA_USART_prepare_transmit(uint8_t length)
   dma.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
   DMA_Init(DMA1_Channel4, &dma);
   USART_DMACmd(USART1, USART_DMAReq_Tx, ENABLE);
-  DMA_ITConfig(DMA1_Channel4, DMA_IT_TC, ENABLE);
-  DMA_Cmd(DMA1_Channel4, ENABLE);
+  DMA1_Channel4->CCR |= DMA_IT_TC;
+  DMA1_Channel4->CCR |= DMA_CCR1_EN;
 }
 //------------------------------------------------------------------------------
 void DMA_USART_prepare_recieve(void)
@@ -100,7 +94,7 @@ void DMA_USART_prepare_recieve(void)
   dma.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
   DMA_Init(DMA1_Channel5, &dma);
   USART_DMACmd(USART1, USART_DMAReq_Rx, ENABLE);
-  DMA_Cmd(DMA1_Channel5, ENABLE);
+  DMA1_Channel5->CCR |= DMA_CCR1_EN;
 }
 //------------------------------------------------------------------------------
 void init_com_timer()

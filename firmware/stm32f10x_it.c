@@ -192,8 +192,6 @@ void TIM2_IRQHandler(void)
   //TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
 }
 //------------------------------------------------------------------------------
-uint32_t timerOVF = 0;
-//------------------------------------------------------------------------------
 void TIM3_IRQHandler(void)
 {
   //timerOVF++;

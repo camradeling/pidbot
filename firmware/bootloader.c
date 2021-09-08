@@ -151,10 +151,10 @@ int main( void )
   //regwr_cb = &process_register;
   //init_modbus();
   //jumpMutex = xSemaphoreCreateMutex();
-  Com1RxSemaphore = xSemaphoreCreateCounting(MAX_COM_QUEUE_LENGTH, 0);
+  //Com1RxSemaphore = xSemaphoreCreateCounting(MAX_COM_QUEUE_LENGTH, 0);
   //xTaskCreate(vPacketsManagerTask, "Packets_manager", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
   //xTaskCreate(vJumpFirmware, "JumpFirmware", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-  xTaskCreateStatic( usb_device_task, "usbd", USBD_STACK_SIZE, NULL, configMAX_PRIORITIES-1, usb_device_stack, &usb_device_taskdef);
+  xTaskCreateStatic( usb_device_task, "usbd", USBD_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, usb_device_stack, &usb_device_taskdef);
   vTaskStartScheduler();
 
   return 0;

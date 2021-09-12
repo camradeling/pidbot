@@ -17,7 +17,7 @@ set(CMAKE_C_FLAGS "-mcpu=cortex-m3 -mthumb -mno-thumb-interwork -mfpu=vfp -msoft
 if(DEBUG_INFO)
         message(STATUS "DEBUG_INFO set")
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0 -g")
-        add_definitions(-DDEBUG)
+        #add_definitions(-DDEBUG)
 else()
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2 -Os -s")
 endif()

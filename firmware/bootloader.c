@@ -217,85 +217,82 @@ void vJumpFirmware (void *pvParameters)
 void vApplicationTickHook( void )//вызывается каждую миллисекунду
 {
   msTick++;
-  /*if((msTick%500) == 0)
+  if(GPIOB->IDR & (1 << 5))
   {
-    if(GPIOB->IDR & (1 << 5))
-    {
-      SET_PIN_LOW(GPIOB,5);
-    }
-    else
-    {
-      SET_PIN_HIGH(GPIOB,5);
-    }
-  }*/
+    SET_PIN_LOW(GPIOB,5);
+  }
+  else
+  {
+    SET_PIN_HIGH(GPIOB,5);
+  }
   return;
 }
 //------------------------------------------------------------------------------
 static void prvSetupHardware( void )
 {
-  /* Start with the clocks in their expected state. */
+  //Start with the clocks in their expected state
   RCC_DeInit();
-  RCC_HSICmd(ENABLE);//needed for flash programming
-  while( RCC_GetFlagStatus( RCC_FLAG_HSIRDY ) == RESET ){}
-  /* Enable HSE (high speed external clock). */
-  RCC_HSEConfig( RCC_HSE_ON );
-  /* Wait till HSE is ready. */
-  while( RCC_GetFlagStatus( RCC_FLAG_HSERDY ) == RESET ){}
-  /* 2 wait states required on the flash. */
+  RCC->CR |= RCC_CR_HSION;
+  //RCC_HSICmd(ENABLE);//needed for flash programming
+  while(!(RCC->CR & RCC_CR_HSIRDY));
+  //while( RCC_GetFlagStatus( RCC_FLAG_HSIRDY ) == RESET ){}
+  //Enable HSE (high speed external clock)
+  //RCC_HSEConfig( RCC_HSE_ON );
+  RCC->CR |= RCC_CR_HSEON;
+  //Wait till HSE is ready
+  while(!(RCC->CR & RCC_CR_HSERDY));
+  //while( RCC_GetFlagStatus( RCC_FLAG_HSERDY ) == RESET ){}
+  //2 wait states required on the flash.
   *( ( unsigned long * ) 0x40022000 ) = 0x02;
-  /* HCLK = SYSCLK */
-  RCC_HCLKConfig( RCC_SYSCLK_Div1 );
-  /* PCLK2 = HCLK */
-  RCC_PCLK2Config( RCC_HCLK_Div1 );
-  /* PCLK1 = HCLK/2 */
-  RCC_PCLK1Config( RCC_HCLK_Div2 );
-  /* PLLCLK = 8MHz * 9 = 72 MHz. */
-  RCC_PLLConfig( RCC_PLLSource_HSE_Div1, RCC_PLLMul_9 );
-  /* Enable PLL. */
-  RCC_PLLCmd( ENABLE );
-  /* Wait till PLL is ready. */
-  while(RCC_GetFlagStatus(RCC_FLAG_PLLRDY) == RESET)
-  {
-  }
-  /* Select PLL as system clock source. */
-  RCC_SYSCLKConfig( RCC_SYSCLKSource_PLLCLK );
-  /* Wait till PLL is used as system clock source. */
-  while( RCC_GetSYSCLKSource() != 0x08 )
-  {
-  }
+  //HCLK = SYSCLK
+  RCC->CFGR &=~ RCC_CFGR_HPRE;
+  //PCLK1 = HCLK
+  RCC->CFGR &=~ RCC_CFGR_PPRE1;
+  //PCLK2 = HCLK;
+  RCC->CFGR &=~ RCC_CFGR_PPRE2;
+  //PLLCLK = 8MHz * 9 = 72 MHz
+  //RCC_PLLConfig( RCC_PLLSource_HSE_Div1, RCC_PLLMul_9 );
+  RCC->CFGR = (RCC->CFGR &=~ (RCC_CFGR_PLLMULL | RCC_CFGR_PLLSRC | RCC_CFGR_PLLXTPRE)) | RCC_CFGR_PLLSRC | RCC_CFGR_PLLMULL9;
+  //Enable PLL
+  //RCC_PLLCmd( ENABLE );
+  RCC->CR |= RCC_CR_PLLON;
+  //Wait till PLL is ready
+  while(!(RCC->CR & RCC_CR_PLLRDY));
+  //while(RCC_GetFlagStatus(RCC_FLAG_PLLRDY) == RESET){}
+  //Select PLL as system clock source.
+  //RCC_SYSCLKConfig( RCC_SYSCLKSource_PLLCLK );
+  RCC->CFGR = (RCC->CFGR & ~RCC_CFGR_SW) | RCC_CFGR_SW_PLL;
+  //Wait till PLL is used as system clock source.
+  while((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_PLL);
+  //while( RCC_GetSYSCLKSource() != 0x08 ){}
   /* Enable GPIOA, GPIOB, GPIOC, GPIOD, GPIOE and AFIO clocks */
-  RCC_APB2PeriphClockCmd(	RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB |RCC_APB2Periph_GPIOC \
-						| RCC_APB2Periph_GPIOD | RCC_APB2Periph_GPIOE |  \
-                                                  RCC_APB2Periph_AFIO | RCC_APB2Periph_SPI1 | \
-                                                    RCC_APB2Periph_ADC1 | RCC_APB2Periph_USART1, ENABLE );
-  /* Configure the ADC clock */
-  RCC_ADCCLKConfig(RCC_PCLK2_Div8);
+  RCC->APB2ENR |= RCC_APB2ENR_IOPAEN | RCC_APB2ENR_IOPBEN | RCC_APB2ENR_USART1EN | RCC_APB2ENR_AFIOEN;
+  //RCC_APB2PeriphClockCmd(	RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB | RCC_APB2Periph_AFIO | RCC_APB2Periph_USART1, ENABLE );
   //enable dma clock
-  RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
-  RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1, ENABLE);
+  //RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
+  RCC->AHBENR |= RCC_AHBENR_DMA1EN;
   /* Set the Vector Table base address at 0x08000000 */
-  NVIC_SetVectorTable( NVIC_VectTab_FLASH, 0x0 );        
-  NVIC_PriorityGroupConfig( NVIC_PriorityGroup_4 );
+  //NVIC_SetVectorTable( NVIC_VectTab_FLASH, 0x0 );        
+  //NVIC_PriorityGroupConfig( NVIC_PriorityGroup_4 );
+  SCB->VTOR = NVIC_VectTab_FLASH;
+  //SCB->AIRCR = AIRCR_VECTKEY_MASK | NVIC_NVIC_PriorityGroup_4;
   /* Configure HCLK clock as SysTick clock source. */
-  SysTick_CLKSourceConfig( SysTick_CLKSource_HCLK );
+  //SysTick_CLKSourceConfig( SysTick_CLKSource_HCLK );
+  SysTick->CTRL |= SysTick_CLKSource_HCLK;
   
-  RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM1, ENABLE);
-  //пока что для отладки
-  /*RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);   
-  TIM_TimeBaseInitTypeDef timerInitStructure;
-  timerInitStructure.TIM_Prescaler = 35;
-  timerInitStructure.TIM_CounterMode = TIM_CounterMode_Up;
-  timerInitStructure.TIM_Period = 0xffff;
-  timerInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;
-  TIM_TimeBaseInit(TIM3, &timerInitStructure);
-  TIM_Cmd(TIM3, ENABLE);*/
-  RCC_APB1PeriphClockCmd(RCC_APB1Periph_USB, ENABLE);
+  RCC->APB2ENR |= RCC_APB2ENR_TIM1EN;
+  RCC->APB1ENR |= RCC_APB1ENR_USBEN;
+  //RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM1, ENABLE);
+  //RCC_APB1PeriphClockCmd(RCC_APB1Periph_USB, ENABLE);
 
   
   //run led
   SET_PIN_LOW(GPIOB,5);
   SET_PIN_OUTPUT_PP(GPIOB,5);
   SET_PIN_HIGH(GPIOB,5);
+  //usb pins
+  SET_PIN_INPUT(USBDM_PORT,USBDM);
+  SET_PIN_INPUT(USBDP_PORT,USBDP);
   //coil pins
   /*SET_PIN_LOW(GPIOB,15);//coil 1
   SET_PIN_OUTPUT_PP(GPIOB,15);
@@ -349,12 +346,4 @@ static void prvSetupHardware( void )
   NVIC_Init( &NVIC_InitStructure );*/
 }
 //------------------------------------------------------------------------------
-#ifdef  DEBUG
-/* Keep the linker happy. */
-void assert_failed( unsigned char* pcFile, unsigned long ulLine )
-{
-	for( ;; )
-	{
-	}
-}
-#endif
+#define assert_failed() {}

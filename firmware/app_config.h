@@ -14,10 +14,14 @@
 #define FIRMWARE_START              0x08008000
 #define FIRMWARE_FINISH             0x08010000
 //------------------------------------------------------------------------------
-#define COIL1 15
-#define COIL1_PORT GPIOB
-#define COIL2 14
-#define COIL2_PORT GPIOB
+#define COIL1 		15
+#define COIL1_PORT 	GPIOB
+#define COIL2 		14
+#define COIL2_PORT 	GPIOB
+#define USBDM		11
+#define USBDM_PORT	GPIOA
+#define USBDP 		12
+#define USBDP_PORT	GPIOA
 //------------------------------------------------------------------------------
 #define mainCOM_TASK_PRIORITY			( tskIDLE_PRIORITY + 1 )
 #define INIT_BAUDRATE BAUDRATE_115200
@@ -26,7 +30,8 @@
 #define INIT_COM_TIMER_CLOCK_DIVIDER BAUDRATE_115200_TIMER_CLOCK_DIVIDER
 #define comSTACK_SIZE				configMINIMAL_STACK_SIZE +1000
 //------------------------------------------------------------------------------
-#define REBOOT()   SCB->AIRCR = 0x05FA0000 | (u32)0x04                                     
+#define AIRCR_VECTKEY_MASK    ((uint32_t)0x05FA0000)
+#define REBOOT()   SCB->AIRCR = AIRCR_VECTKEY_MASK | (u32)0x04                                     
 //------------------------------------------------------------------------------
 #define SET_PIN_HIGH(PORT,PIN) PORT->ODR |= (1 << PIN);
 #define SET_PIN_LOW(PORT,PIN)  PORT->ODR &=~(1 << PIN);

@@ -177,7 +177,6 @@ static void prvSetupHardware( void )
   RCC_ADCCLKConfig(RCC_PCLK2_Div8);
   //enable dma clock
   RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
-  RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1, ENABLE);
   /* Set the Vector Table base address at 0x08000000 */
   //NVIC_SetVectorTable( NVIC_VectTab_FLASH, 0x0 );        
   NVIC_PriorityGroupConfig( NVIC_PriorityGroup_4 );
@@ -185,15 +184,6 @@ static void prvSetupHardware( void )
   SysTick_CLKSourceConfig( SysTick_CLKSource_HCLK );
   
   RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM1, ENABLE);
-  //пока что для отладки
-  RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);   
-  TIM_TimeBaseInitTypeDef timerInitStructure;
-  timerInitStructure.TIM_Prescaler = 35;
-  timerInitStructure.TIM_CounterMode = TIM_CounterMode_Up;
-  timerInitStructure.TIM_Period = 0xffff;
-  timerInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;
-  TIM_TimeBaseInit(TIM3, &timerInitStructure);
-  TIM_Cmd(TIM3, ENABLE);
   
   //run led
   SET_PIN_LOW(GPIOB,5);
@@ -251,13 +241,4 @@ static void prvSetupHardware( void )
   NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
   NVIC_Init( &NVIC_InitStructure );
 }
-//------------------------------------------------------------------------------
-#ifdef  DEBUG
-/* Keep the linker happy. */
-void assert_failed( unsigned char* pcFile, unsigned long ulLine )
-{
-	for( ;; )
-	{
-	}
-}
-#endif
+

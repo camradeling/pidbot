@@ -4,9 +4,12 @@
 #include "tusb.h"
 //------------------------------------------------------------------------------
 #define USBD_STACK_SIZE     (3*configMINIMAL_STACK_SIZE/2)
-//------------------------------------------------------------------------------
 StackType_t  usb_device_stack[USBD_STACK_SIZE];
 StaticTask_t usb_device_taskdef;
+//------------------------------------------------------------------------------
+#define CDC_STACK_SZIE      configMINIMAL_STACK_SIZE
+StackType_t  cdc_stack[CDC_STACK_SZIE];
+StaticTask_t cdc_taskdef;
 //------------------------------------------------------------------------------
 /*Configure the clocks, GPIO and other peripherals */
 static void prvSetupHardware( void );
@@ -144,6 +147,40 @@ void usb_device_task(void* param)
   }
 }
 //------------------------------------------------------------------------------
+void cdc_task(void* params)
+{
+  (void) params;
+
+  // RTOS forever loop
+  while ( 1 )
+  {
+    // connected() check for DTR bit
+    // Most but not all terminal client set this when making connection
+    // if ( tud_cdc_connected() )
+    {
+      // There are data available
+      if ( tud_cdc_available() )
+      {
+        uint8_t buf[64];
+        SET_PIN_HIGH(GPIOB,14);
+        // read and echo back
+        uint32_t count = tud_cdc_read(buf, sizeof(buf));
+        (void) count;
+
+        // Echo back
+        // Note: Skip echo by commenting out write() and write_flush()
+        // for throughput test e.g
+        //    $ dd if=/dev/zero of=/dev/ttyACM0 count=10000
+        tud_cdc_write(buf, count);
+        tud_cdc_write_flush();
+      }
+    }
+
+    // For ESP32-S2 this delay is essential to allow idle how to run and reset wdt
+    vTaskDelay(pdMS_TO_TICKS(10));
+  }
+}
+//------------------------------------------------------------------------------
 int main( void )
 {
   prvSetupHardware();
@@ -155,6 +192,7 @@ int main( void )
   //xTaskCreate(vPacketsManagerTask, "Packets_manager", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
   //xTaskCreate(vJumpFirmware, "JumpFirmware", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
   xTaskCreateStatic( usb_device_task, "usbd", USBD_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, usb_device_stack, &usb_device_taskdef);
+  xTaskCreateStatic( cdc_task, "cdc", CDC_STACK_SZIE, NULL, tskIDLE_PRIORITY + 1, cdc_stack, &cdc_taskdef);
   vTaskStartScheduler();
 
   return 0;
@@ -294,12 +332,13 @@ static void prvSetupHardware( void )
   SET_PIN_INPUT(USBDM_PORT,USBDM);
   SET_PIN_INPUT(USBDP_PORT,USBDP);
   //coil pins
-  /*SET_PIN_LOW(GPIOB,15);//coil 1
+  SET_PIN_LOW(GPIOB,15);//coil 1
   SET_PIN_OUTPUT_PP(GPIOB,15);
   SET_PIN_LOW(GPIOB,14);//coil 2
   SET_PIN_OUTPUT_PP(GPIOB,14);
+
   
-  USART_InitTypeDef USART_InitStructure;
+  /*USART_InitTypeDef USART_InitStructure;
   USART_InitStructure.USART_BaudRate = INIT_BAUDRATE;
   USART_InitStructure.USART_WordLength = USART_WordLength_8b;
   USART_InitStructure.USART_StopBits = USART_StopBits_1;

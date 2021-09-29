@@ -71,8 +71,23 @@ extern "C" {
 
 //------------------------------------------------------------------------------
   typedef struct {
-     uint32_t EPR[8];
-     uint32_t RESERVED[8];
+    __IO uint16_t EP0R; /*!< USB Endpoint 0 register, Address offset: 0x00 */
+    __IO uint16_t RESERVED0; /*!< Reserved */
+    __IO uint16_t EP1R; /*!< USB Endpoint 1 register, Address offset: 0x04 */
+    __IO uint16_t RESERVED1; /*!< Reserved */
+    __IO uint16_t EP2R; /*!< USB Endpoint 2 register, Address offset: 0x08 */
+    __IO uint16_t RESERVED2; /*!< Reserved */
+    __IO uint16_t EP3R; /*!< USB Endpoint 3 register, Address offset: 0x0C */
+    __IO uint16_t RESERVED3; /*!< Reserved */
+    __IO uint16_t EP4R; /*!< USB Endpoint 4 register, Address offset: 0x10 */
+    __IO uint16_t RESERVED4; /*!< Reserved */
+    __IO uint16_t EP5R; /*!< USB Endpoint 5 register, Address offset: 0x14 */
+    __IO uint16_t RESERVED5; /*!< Reserved */
+    __IO uint16_t EP6R; /*!< USB Endpoint 6 register, Address offset: 0x18 */
+    __IO uint16_t RESERVED6; /*!< Reserved */
+    __IO uint16_t EP7R; /*!< USB Endpoint 7 register, Address offset: 0x1C */
+    __IO uint16_t RESERVED7[17]; /*!< Reserved */
+     //uint32_t RESERVED[8];
      uint32_t CNTR;
      uint32_t ISTR;
      uint32_t FNR;

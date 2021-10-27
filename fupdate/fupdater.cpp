@@ -130,6 +130,7 @@ vector<uint8_t> FUpdater::get_packet()
 //----------------------------------------------------------------------------------------------------------------------
 void FUpdater::process_packet(uint8_t* data, int len)
 {
+	fprintf(stderr, "got packet from device\n");
 	vector<uint16_t> bytes;
 	vector<uint8_t> packdata;
 	timespec_t curStamp = {0,0};
@@ -466,6 +467,7 @@ void FUpdater::thread_job()
 			break;
 		}
 		schan->send_message_buffer(&schan->outQueue, std::move(buf), true);
+		clock_gettime(CLOCK_MONOTONIC, &curStamp);
 		packSentStamp = curStamp;
 		lastState = state;
 		state = CHECK_BL_STATUS_SENT;

@@ -1,8 +1,7 @@
 #include "includes.h"
 #include "eeprom.h"
 #include "tusb.h"
-//------------------------------------------------------------------------------
-#define USBD_STACK_SIZE     (3*configMINIMAL_STACK_SIZE/2)
+#include "usbserial.h"
 //------------------------------------------------------------------------------
 StackType_t  usb_device_stack[USBD_STACK_SIZE];
 StaticTask_t usb_device_taskdef;
@@ -20,6 +19,10 @@ extern register_cb isregwrtbl_cb;
 extern register_cb regwr_cb;
 extern uint16_t* UsartPackets;
 extern uint16_t* UsartErrors;
+extern StackType_t  usb_device_stack[];
+extern StaticTask_t usb_device_taskdef;
+extern StackType_t  cdc_stack[];
+extern StaticTask_t cdc_taskdef;
 //------------------------------------------------------------------------------
 volatile uint32_t msTick=0;
 //------------------------------------------------------------------------------
@@ -86,34 +89,16 @@ void init_modbus()
   MODBUS_HR[MBHR_BOOTLOADER_STATUS] = FIRMWARE_RUNNING;
 }
 //------------------------------------------------------------------------------
-// USB Device Driver task
-// This top level thread process all usb events and invoke callbacks
-void usb_device_task(void* param)
-{
-  (void) param;
-
-  // This should be called after scheduler/kernel is started.
-  // Otherwise it could cause kernel issue since USB IRQ handler does use RTOS queue API.
-  tusb_init();
-
-  // RTOS forever loop
-  while (1)
-  {
-    // tinyusb device task
-    tud_task();
-  }
-}
-//------------------------------------------------------------------------------
 int main( void )
 {
   prvSetupHardware();
   isregwrtbl_cb = &is_writeable;
   regwr_cb = &process_register;
   init_modbus();
-  Com1RxSemaphore = xSemaphoreCreateCounting(MAX_COM_QUEUE_LENGTH, 0);
-  xTaskCreate(vPacketsManagerTask, "Packets_manager", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
-  // Create a task for tinyusb device stack
-  xTaskCreateStatic( usb_device_task, "usbd", USBD_STACK_SIZE, NULL, configMAX_PRIORITIES-1, usb_device_stack, &usb_device_taskdef);
+  //Com1RxSemaphore = xSemaphoreCreateCounting(MAX_COM_QUEUE_LENGTH, 0);
+  //xTaskCreate(vPacketsManagerTask, "Packets_manager", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
+  xTaskCreateStatic( usb_device_task, "usbd", USBD_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, usb_device_stack, &usb_device_taskdef);
+  xTaskCreateStatic( cdc_task, "cdc", CDC_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, cdc_stack, &cdc_taskdef);
   xTaskCreate(vInoutsTask, "Inouts", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
   vTaskStartScheduler();
 
@@ -184,18 +169,21 @@ static void prvSetupHardware( void )
   SysTick_CLKSourceConfig( SysTick_CLKSource_HCLK );
   
   RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM1, ENABLE);
-  
+  RCC->APB1ENR |= RCC_APB1ENR_USBEN;
   //run led
   SET_PIN_LOW(GPIOB,5);
   SET_PIN_OUTPUT_PP(GPIOB,5);
   SET_PIN_HIGH(GPIOB,5);
+  //usb pins
+  SET_PIN_INPUT(USBDM_PORT,USBDM);
+  SET_PIN_INPUT(USBDP_PORT,USBDP);
   //coil pins
   SET_PIN_LOW(GPIOB,15);//coil 1
   SET_PIN_OUTPUT_PP(GPIOB,15);
   SET_PIN_LOW(GPIOB,14);//coil 2
   SET_PIN_OUTPUT_PP(GPIOB,14);
   
-  USART_InitTypeDef USART_InitStructure;
+  /*USART_InitTypeDef USART_InitStructure;
   USART_InitStructure.USART_BaudRate = INIT_BAUDRATE;
   USART_InitStructure.USART_WordLength = USART_WordLength_8b;
   USART_InitStructure.USART_StopBits = USART_StopBits_1;
@@ -239,6 +227,6 @@ static void prvSetupHardware( void )
   NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = configLIBRARY_KERNEL_INTERRUPT_PRIORITY;
   NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0; //Not used as 4 bits are used for the pre-emption priority. 
   NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-  NVIC_Init( &NVIC_InitStructure );
+  NVIC_Init( &NVIC_InitStructure );*/
 }
 

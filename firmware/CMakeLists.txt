@@ -62,6 +62,7 @@ set(Firmware_Sources
         Libraries/modbuslib/modbus.c
         globals.c
         serial.c
+        usbserial.c
         stm32f10x_it.c
         stm32f10x_vector.c
         ${FreeRTOSSources}
@@ -75,6 +76,7 @@ set(Bootloader_Sources
         Libraries/modbuslib/modbus.c
         globals.c
         serial.c
+        usbserial.c
         stm32f10x_it.c
         stm32f10x_vector.c
         ${FreeRTOSSources}
@@ -97,6 +99,7 @@ target_include_directories(${PROJECT_NAME}.elf PUBLIC ${PROJECT_SOURCE_DIR}/Libr
 target_include_directories(${PROJECT_NAME}.elf PUBLIC ${PROJECT_SOURCE_DIR}/Libraries/CMSIS/Include)
 target_include_directories(${PROJECT_NAME}.elf PUBLIC ${PROJECT_SOURCE_DIR}/Libraries/tinyusb/src)
 target_include_directories(${PROJECT_NAME}.elf PUBLIC ${PROJECT_SOURCE_DIR}/Libraries/tinyusb/src/device)
+target_include_directories(${PROJECT_NAME}.elf PUBLIC ${PROJECT_SOURCE_DIR}/Libraries/tinyusb/src/common)
 add_custom_command(TARGET ${PROJECT_NAME}.elf POST_BUILD
         COMMAND ${CMAKE_OBJCOPY} -O ihex ${PROJECT_NAME}.elf ${PROJECT_NAME}.hex
         COMMAND ${CMAKE_OBJCOPY} -O binary ${PROJECT_NAME}.elf ${PROJECT_NAME}.bin
@@ -118,6 +121,7 @@ target_include_directories(bootloader.elf PUBLIC ${PROJECT_SOURCE_DIR}/Libraries
 target_include_directories(bootloader.elf PUBLIC ${PROJECT_SOURCE_DIR}/Libraries/CMSIS/Include)
 target_include_directories(bootloader.elf PUBLIC ${PROJECT_SOURCE_DIR}/Libraries/tinyusb/src)
 target_include_directories(bootloader.elf PUBLIC ${PROJECT_SOURCE_DIR}/Libraries/tinyusb/src/device)
+target_include_directories(bootloader.elf PUBLIC ${PROJECT_SOURCE_DIR}/Libraries/tinyusb/src/common)
 add_custom_command(TARGET bootloader.elf POST_BUILD
         COMMAND ${CMAKE_OBJCOPY} -O ihex bootloader.elf bootloader.hex
         COMMAND ${CMAKE_OBJCOPY} -O binary bootloader.elf bootloader.bin

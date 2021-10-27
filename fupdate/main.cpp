@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
     {
         filename = string(defaultConf);
     }
-    fprintf(stderr, "configuration file = %s\n",filename.c_str());
+    fprintf(stderr, "configuration file = %s\n",configfile.c_str());
     bool confok = 1;
     FILE* fpconf=nullptr;
     mxml_node_t* tree = nullptr;

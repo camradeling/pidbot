@@ -14,6 +14,8 @@
 #define FIRMWARE_START              0x08008000
 #define FIRMWARE_FINISH             0x08010000
 //------------------------------------------------------------------------------
+#define RUNLED		5
+#define RUNLED_PORT GPIOB
 #define COIL1 		15
 #define COIL1_PORT 	GPIOB
 #define COIL2 		14
@@ -28,7 +30,6 @@
 #define INIT_COM_TIMER_PERIOD BAUDRATE_115200_TIMER_PERIOD
 #define INIT_COM_TIMER_PRESCALER BAUDRATE_115200_TIMER_PRESCALER
 #define INIT_COM_TIMER_CLOCK_DIVIDER BAUDRATE_115200_TIMER_CLOCK_DIVIDER
-#define comSTACK_SIZE				configMINIMAL_STACK_SIZE +1000
 //------------------------------------------------------------------------------
 #define AIRCR_VECTKEY_MASK    ((uint32_t)0x05FA0000)
 #define REBOOT()   SCB->AIRCR = AIRCR_VECTKEY_MASK | (u32)0x04                                     

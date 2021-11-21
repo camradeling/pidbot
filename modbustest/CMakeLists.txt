@@ -12,8 +12,9 @@ set(PROJECT_NAME modbustest)
 
 set(Sources
         main.cpp
-        modbus.cpp
+        modbuslib/modbus_client.cpp
+        modbuslib/modbus_crc_tables.c
         uart.cpp
         )
 add_executable(${PROJECT_NAME} ${Sources})
-
+include_directories(modbuslib)

@@ -1,5 +1,9 @@
-#include "modbus_client.h"
+#include <stdint.h>
 //----------------------------------------------------------------------------------------------------------------------
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 const uint8_t modbus_crc16H[256] =
 {
   0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01, 0xC0,
@@ -58,84 +62,8 @@ const uint8_t modbus_crc16L[256] =
   0x8A, 0x4A, 0x4E, 0x8E, 0x8F, 0x4F, 0x8D, 0x4D, 0x4C, 0x8C,
   0x44, 0x84, 0x85, 0x45, 0x87, 0x47, 0x46, 0x86, 0x82, 0x42,
   0x43, 0x83, 0x41, 0x81, 0x80, 0x40
-} ;
+};
 //----------------------------------------------------------------------------------------------------------------------
-uint16_t ModbusClient::calc_crc(uint8_t *arr, uint8_t length) 
-{
-  uint8_t ind;
-  uint8_t i;
-  uint8_t cksumHigh = 0xFF;
-  uint8_t cksumLow = 0xFF;
-  if(length > 0) 
-  {
-    for(i=0; i<length; i++) 
-    {
-      ind = cksumHigh ^ arr[i];
-      cksumHigh = cksumLow ^ modbus_crc16H[ind];
-      cksumLow = modbus_crc16L[ind];
-    }
-  }
-  return cksumLow |(cksumHigh << 8);
+#ifdef __cplusplus
 }
-//----------------------------------------------------------------------------------------------------------------------
-vector<uint8_t> ModbusClient::build_write_reg_06(uint8_t addr, uint16_t reg,uint16_t val)
-{
-  vector<uint8_t> data;
-  data.push_back(addr);
-  data.push_back(0x06);
-  data.push_back((reg & 0xff00) >> 8);
-  data.push_back(reg & 0x00ff);
-  data.push_back((val & 0xff00) >> 8);
-  data.push_back(val & 0x00ff);
-  uint16_t crc = calc_crc(data.data(), data.size());
-  data.push_back(((uint8_t*)&crc)[0]);
-  data.push_back(((uint8_t*)&crc)[1]);
-  return data;
-}
-//----------------------------------------------------------------------------------------------------------------------
-vector<uint8_t> ModbusClient::build_loop_08(uint8_t addr)
-{
-  vector<uint8_t> data;
-  data.push_back(addr);
-  data.push_back(0x08);
-  uint16_t crc = calc_crc(data.data(), data.size());
-  data.push_back(((uint8_t*)&crc)[0]);
-  data.push_back(((uint8_t*)&crc)[1]);
-  return data;
-}
-//----------------------------------------------------------------------------------------------------------------------
-vector<uint8_t> ModbusClient::build_read_03(uint8_t addr, uint16_t reg,uint16_t cnt)
-{
-  vector<uint8_t> data;
-  data.push_back(addr);
-  data.push_back(0x03);
-  data.push_back((reg & 0xff00) >> 8);
-  data.push_back(reg & 0x00ff);
-  data.push_back((cnt & 0xff00) >> 8);
-  data.push_back(cnt & 0x00ff);
-  uint16_t crc = calc_crc(data.data(), data.size());
-  data.push_back(((uint8_t*)&crc)[0]);
-  data.push_back(((uint8_t*)&crc)[1]);
-  return data;
-}
-//----------------------------------------------------------------------------------------------------------------------
-vector<uint8_t> ModbusClient::build_write_multreg_16(uint8_t addr, uint16_t startreg,vector<uint16_t> vals)
-{
-  vector<uint8_t> data;
-  data.push_back(addr);
-  data.push_back(0x10);
-  data.push_back((startreg & 0xff00) >> 8);
-  data.push_back(startreg & 0x00ff);
-  data.push_back(vals.size());
-  for(auto val : vals)
-  {
-    data.push_back((val & 0xff00) >> 8);
-    data.push_back(val & 0x00ff);
-  }
-  
-  uint16_t crc = calc_crc(data.data(), data.size());
-  data.push_back(((uint8_t*)&crc)[0]);
-  data.push_back(((uint8_t*)&crc)[1]);
-  return data;
-}
-//----------------------------------------------------------------------------------------------------------------------
+#endif

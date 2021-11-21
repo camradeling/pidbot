@@ -1,84 +1,5 @@
 #include "fupdater.h"
 //----------------------------------------------------------------------------------------------------------------------
-void FUpdater::init_module()
-{
-	CHPL = shared_ptr<ChanPool>(new ChanPool);
-    CHPL->chp = CHPL;
-	MBCL = shared_ptr<ModbusClient>(new ModbusClient);
-	CHPL->init(config);
-	if(CHPL->allChan.size() > 1)
-	{
-		fprintf(stderr, "multiple channels in config, closing...\n");
-		exit(-1);
-	}
-	for(int i = 0; i < CHPL->allChan.size(); i++)
-    {
-		weak_ptr<BasicChannel> chan = CHPL->allChan.at(i);
-		shared_ptr<BasicChannel> schan = chan.lock();
-		add_pollable_handler(schan->inCmdQueue.fd(), EPOLLIN, &FUpdater::process_channel, this, chan);
-        add_pollable_handler(schan->inQueue.fd(), EPOLLIN, &FUpdater::process_channel, this, chan);
-    }
-    ProgramThread::init_module();
-}
-//----------------------------------------------------------------------------------------------------------------------
-void FUpdater::process_channel(weak_ptr<BasicChannel> chan)
-{
-	shared_ptr<BasicChannel> schan = chan.lock();
-	if(!schan)
-		return;
-	std::unique_ptr<MessageBuffer> packet;
-	while((packet = schan->inCmdQueue.pop()) && !stop)
-	{
-		enum MessageType packetType = packet->Type();
-		if (packetType == CHAN_OPEN_PACKET && sessionsActive.size() == 0)
-		{
-		    Session ses;
-			ses.fd = packet->getfd();
-			fprintf(stderr, "connection established\n");
-			ses.ch = schan;
-			ses.deviceOnline = 0;
-			if(packet->getChanAddr() != "")
-				ses.chanaddr = packet->getChanAddr();
-			//здесь надо послать инит мессадж
-			sessionsActive.push_back(ses);
-			currentSession = &sessionsActive.at(sessionsActive.size()-1);
-		}
-		else if (packetType == CHAN_CLOSE_PACKET)
-		{
-			for (int j = 0; j < sessionsActive.size(); j++)
-			{
-				if (sessionsActive.at(j).fd == packet->getfd())
-				{
-					sessionsActive.erase(sessionsActive.begin() + j);
-					break;
-				}
-			}
-			currentSession = nullptr;
-			fprintf(stderr, "command channel closed unexpectedly, exiting...\n");
-			exit(-1);
-		}
-	}
-    while((packet = schan->inQueue.pop()) && !stop)
-	{
-		enum MessageType packetType = packet->Type();
-    	currentSession = nullptr;
-        if (packetType == CHAN_DATA_PACKET)
-        {//для других зарезервируем это же значение
-        	for (int j = 0; j < sessionsActive.size(); j++)
-            {
-                if (sessionsActive.at(j).fd == packet->getfd())
-                {
-                    currentSession = &sessionsActive[j];
-                    currentSession->InSeq = packet->seqnum;
-                    InStream.insert(InStream.end(),packet->Data(),packet->Data()+packet->Length());
-                    break;
-                }
-            }
-        }
-        else
-        	fprintf(stderr, "Unknown data packet type %d\n", packetType);
-	}
-}
 //----------------------------------------------------------------------------------------------------------------------
 vector<uint8_t> FUpdater::get_packet()
 {
@@ -130,7 +51,6 @@ vector<uint8_t> FUpdater::get_packet()
 //----------------------------------------------------------------------------------------------------------------------
 void FUpdater::process_packet(uint8_t* data, int len)
 {
-	fprintf(stderr, "got packet from device\n");
 	vector<uint16_t> bytes;
 	vector<uint8_t> packdata;
 	timespec_t curStamp = {0,0};
@@ -139,21 +59,21 @@ void FUpdater::process_packet(uint8_t* data, int len)
 	switch(state)
 	{
 	case INITIAL_STATE:
-		fprintf(stderr, "unexpected packet, exiting...\n");
+		CHPLWRITELOG("unexpected packet, exiting...");
 		exit(-1);
 		break;
 	case CHECK_BL_STATUS_SENT:
 	{
 		if(len*2 < MODBUS_03_DATASTART_IND+4)
 		{
-			fprintf(stderr, "ERROR\n");
+			CHPLWRITELOG("ERROR");
 			state = ERROR;
 			break;
 		}
 		BlStatus = (((uint16_t)data[MODBUS_03_DATASTART_IND] << 8) & 0xff00) | ((uint16_t)data[MODBUS_03_DATASTART_IND+1] & 0x00ff);
 		if(BlStatus == FIRMWARE_RUNNING)
 		{
-			fprintf(stderr, "running firmware - switching to bootloader\n");
+			CHPLWRITELOG("running firmware - switching to bootloader");
 			if(send_switch_to_bootloader())
 				state = ERROR;
 			else
@@ -164,7 +84,7 @@ void FUpdater::process_packet(uint8_t* data, int len)
 		}
 		else
 		{
-			fprintf(stderr, "running bootloader - start uploading\n");
+			CHPLWRITELOG("running bootloader - start uploading");
 			if(send_one_more_block())
 				state = ERROR;
 		} 
@@ -178,11 +98,11 @@ void FUpdater::process_packet(uint8_t* data, int len)
 		else
 		{
 			sleep(1);
-			fprintf(stderr, "checking device status... ");
+			CHPLWRITELOG("checking device status... ");
 			packdata = MBCL->build_read_03(MB_BROADCAST_ADDR, MBHR_BOOTLOADER_STATUS,1);
 			if(packdata.size() <= 0)
 			{
-				fprintf(stderr, "error constructing modbus packet, exiting...\n");
+				CHPLWRITELOG("error constructing modbus packet, exiting...");
 				state = ERROR;
 				break;
 			}
@@ -207,7 +127,7 @@ void FUpdater::process_packet(uint8_t* data, int len)
 		packdata = MBCL->build_read_03(MB_BROADCAST_ADDR, MBHR_COMMAND_STATUS,1);
 		if(packdata.size() <= 0)
 		{
-			fprintf(stderr, "error constructing modbus packet, exiting...\n");
+			CHPLWRITELOG("error constructing modbus packet, exiting...");
 			state = ERROR;
 		}
 		std::unique_ptr<MessageBuffer> buf(new MessageBuffer(currentSession->fd, packdata.size(), CHAN_DATA_PACKET));
@@ -229,7 +149,7 @@ void FUpdater::process_packet(uint8_t* data, int len)
 		packdata = MBCL->build_write_reg_06(MB_BROADCAST_ADDR, MBHR_BOOTLOADER_STATUS,BOOTLOADER_JUMP);
 		if(packdata.size() <= 0)
 		{
-			fprintf(stderr, "error constructing modbus packet, exiting...\n");
+			CHPLWRITELOG("error constructing modbus packet, exiting...");
 			state = ERROR;
 		}
 		std::unique_ptr<MessageBuffer> buf(new MessageBuffer(currentSession->fd, packdata.size(), CHAN_DATA_PACKET));
@@ -248,7 +168,7 @@ void FUpdater::process_packet(uint8_t* data, int len)
 		packdata = MBCL->build_read_03(MB_BROADCAST_ADDR, MBHR_COMMAND_STATUS,1);
 		if(packdata.size() <= 0)
 		{
-			fprintf(stderr, "error constructing modbus packet, exiting...\n");
+			CHPLWRITELOG("error constructing modbus packet, exiting...");
 			state = ERROR;
 		}
 		std::unique_ptr<MessageBuffer> buf(new MessageBuffer(currentSession->fd, packdata.size(), CHAN_DATA_PACKET));
@@ -270,7 +190,7 @@ void FUpdater::process_packet(uint8_t* data, int len)
 		{
 			if(len*2 < MODBUS_03_DATASTART_IND+4)
 			{
-				fprintf(stderr, "ERROR\n");
+				CHPLWRITELOG("ERROR");
 				state = ERROR;
 				break;
 			}
@@ -278,24 +198,24 @@ void FUpdater::process_packet(uint8_t* data, int len)
 			//fprintf(stderr, "status = %04X ",status);
 			if(status != COMMAND_STATUS_OK)
 			{
-				fprintf(stderr, "ERROR\n");
+				CHPLWRITELOG("ERROR");
 				state = ERROR;
 				break;
 			}
 			else
-				fprintf(stderr, "OK\n");
+				CHPLWRITELOG("\rOK");
 			if(firmwareNextAddr >= firmware->size())
 			{
-				fprintf(stderr, "firmware upload finished, jumping to start address ... ");
+				CHPLWRITELOG("firmware upload finished, jumping to start address ... ");
 				bytes.push_back(firmware->size());
 				crc = MBCL->calc_crc(firmware->data(),firmware->size());
 				bytes.push_back(crc);
-				fprintf(stderr, "firmware len = %04X\n",bytes[0]);
-				fprintf(stderr, "firmware crc = %04X\n", bytes[1]);
+				CHPLWRITELOG("firmware len = %04X",&bytes[0]);
+				CHPLWRITELOG("firmware crc = %04X",&bytes[1]);
 				packdata = MBCL->build_write_multreg_16(MB_BROADCAST_ADDR, MBHR_FIRMWARE_FULL_LEN, bytes);
 				if(packdata.size() <= 0)
 				{
-					fprintf(stderr, "error constructing modbus packet, exiting...\n");
+					fprintf(stderr, "error constructing modbus packet, exiting...");
 					state = ERROR;
 				}
 				std::unique_ptr<MessageBuffer> buf(new MessageBuffer(currentSession->fd, packdata.size(), CHAN_DATA_PACKET));
@@ -317,18 +237,18 @@ void FUpdater::process_packet(uint8_t* data, int len)
 		}
 		case FIRMWARE_START_SENT:
 		{
-			fprintf(stderr, "firmware check status after start command shouldnt work, finishing...\n");
+			CHPLWRITELOG("firmware check status after start command shouldnt work, finishing...");
 			exit(-1);
 			break;
 		}
 		default:
-			fprintf(stderr, "unknown state, exiting...\n");
+			CHPLWRITELOG("unknown state, exiting...");
 			exit(-1);	
 		}  
 		break;
 	}
 	default:
-		fprintf(stderr, "unknown state, exiting...\n");
+		CHPLWRITELOG("unknown state, exiting...");
 		exit(-1);
 		break;	
 	}
@@ -342,7 +262,7 @@ int FUpdater::send_switch_to_bootloader()
 	packdata = MBCL->build_write_reg_06(MB_BROADCAST_ADDR, MBHR_BOOTLOADER_STATUS, BOOTLOADER_WAIT_30S);
 	if(packdata.size() <= 0)
 	{
-		fprintf(stderr, "error constructing modbus packet, exiting...\n");
+		CHPLWRITELOG("error constructing modbus packet, exiting...");
 		state = ERROR;
 	}
 	std::unique_ptr<MessageBuffer> buf(new MessageBuffer(currentSession->fd, packdata.size(), CHAN_DATA_PACKET));
@@ -364,11 +284,11 @@ int FUpdater::send_sysreset()
 	timespec_t curStamp = {0,0};
 	clock_gettime(CLOCK_MONOTONIC, &curStamp);
 	vector<uint8_t> packdata;
-	fprintf(stderr, "system reset requested...\n");
+	CHPLWRITELOG("system reset requested...");
 	packdata = MBCL->build_write_reg_06(MB_BROADCAST_ADDR, MBHR_REG_COMMAND, CMD_REBOOT);
 	if(packdata.size() <= 0)
 	{
-		fprintf(stderr, "error constructing modbus packet, exiting...\n");
+		CHPLWRITELOG("error constructing modbus packet, exiting...");
 		state = ERROR;
 	}
 	std::unique_ptr<MessageBuffer> buf(new MessageBuffer(currentSession->fd, packdata.size(), CHAN_DATA_PACKET));
@@ -387,7 +307,7 @@ int FUpdater::send_sysreset()
 //----------------------------------------------------------------------------------------------------------------------
 int FUpdater::send_one_more_block()
 {
-	fprintf(stderr, "writing 0x80 bytes block, addr = %08X ... ",firmwareNextAddr);
+	CHPLWRITELOG("writing 0x80 bytes block, addr = %08X ... ",firmwareNextAddr);
 	vector<uint16_t> data;
 	vector<uint8_t> packdata;
 	int blocklen = 0;
@@ -418,7 +338,7 @@ int FUpdater::send_one_more_block()
 	packdata = MBCL->build_write_multreg_16(MB_BROADCAST_ADDR, MBHR_WRITE_FLASH_ADDR, data);
 	if(packdata.size() <= 0)
 	{
-		fprintf(stderr, "error constructing modbus packet, exiting...\n");
+		CHPLWRITELOG("error constructing modbus packet, exiting...");
 		return -1;
 	}
 	std::unique_ptr<MessageBuffer> buf(new MessageBuffer(currentSession->fd, packdata.size(), CHAN_DATA_PACKET));
@@ -451,11 +371,11 @@ void FUpdater::thread_job()
 	switch(state)
 	{
 	case INITIAL_STATE:
-		fprintf(stderr, "checking device status... ");
+		CHPLWRITELOG("checking device status... ");
 		packdata = MBCL->build_read_03(MB_BROADCAST_ADDR, MBHR_BOOTLOADER_STATUS,1);
 		if(packdata.size() <= 0)
 		{
-			fprintf(stderr, "error constructing modbus packet, exiting...\n");
+			CHPLWRITELOG("error constructing modbus packet, exiting...");
 			state = ERROR;
 		}
 		buf = std::unique_ptr<MessageBuffer>(new MessageBuffer(currentSession->fd, packdata.size(), CHAN_DATA_PACKET));
@@ -483,16 +403,16 @@ void FUpdater::thread_job()
                     ((uint64_t)packSentStamp.tv_sec*1000 + (uint64_t)packSentStamp.tv_nsec/DECMILLION);
         if(diff > BLOCK_SEND_TIMEOUT_MS)
         {
-        	fprintf(stderr, "timeout error, exiting...\n");
+        	CHPLWRITELOG("timeout error, exiting...");
 			exit(-1);
         }            
 		break;
 	case ERROR:		
-		fprintf(stderr, "unknown error, exiting...\n");
+		CHPLWRITELOG("unknown error, exiting...");
 		exit(-1);
 		break;
 	default:
-		fprintf(stderr, "unknown state, exiting...\n");
+		CHPLWRITELOG("unknown state, exiting...");
 		exit(-1);
 		break;
 	}

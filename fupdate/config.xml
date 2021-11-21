@@ -1,4 +1,5 @@
 <Configuration Version="2.0">
+	<Logger>true</Logger>
 	<CliChannels>
 		<Channel Type="COMPort" Alias="COM1" Function="any">
 			<Device>/dev/ttyACM0</Device>

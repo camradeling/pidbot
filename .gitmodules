@@ -16,3 +16,6 @@
 [submodule "fupdate/threadlib"]
 	path = fupdate/threadlib
 	url = https://github.com/camradeling/threadlib.git
+[submodule "modbustest/modbuslib"]
+	path = modbustest/modbuslib
+	url = https://github.com/camradeling/modbuslib.git

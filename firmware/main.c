@@ -3,9 +3,6 @@
 #include "tusb.h"
 #include "usbserial.h"
 //------------------------------------------------------------------------------
-StackType_t  usb_device_stack[USBD_STACK_SIZE];
-StaticTask_t usb_device_taskdef;
-//------------------------------------------------------------------------------
 /*Configure the clocks, GPIO and other peripherals */
 static void prvSetupHardware( void );
 //------------------------------------------------------------------------------
@@ -107,11 +104,14 @@ int main( void )
 //------------------------------------------------------------------------------
 void vInoutsTask (void *pvParameters)
 {
-  SET_PIN_HIGH(COIL1_PORT,COIL1);
-  SET_PIN_HIGH(COIL2_PORT,COIL2);
   for(;;)
   {  
-    vTaskDelay(500 / portTICK_RATE_MS);
+    SET_PIN_HIGH(COIL1_PORT,COIL1);
+    SET_PIN_LOW(COIL2_PORT,COIL2);
+    vTaskDelay(1000 / portTICK_RATE_MS);
+    SET_PIN_LOW(COIL1_PORT,COIL1);
+    SET_PIN_HIGH(COIL2_PORT,COIL2);
+    vTaskDelay(1000 / portTICK_RATE_MS);
   }
 }
 //------------------------------------------------------------------------------

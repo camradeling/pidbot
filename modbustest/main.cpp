@@ -1,6 +1,6 @@
 #include <cstring>
 #include <map>
-#include "modbus.h"
+#include "modbus_client.h"
 #include "uart.h"
 //----------------------------------------------------------------------------------------------------------------------
 #define	JUMP 0
@@ -24,11 +24,11 @@ int main(int argc, char* argv[])
 		return -1;
 	uint16_t val = strtol(argv[1], NULL, 16);
 	ModbusClient* client = new ModbusClient;
-	client->com = new COMPort;
-	client->com->alias = "/dev/ttyACM0";
-	client->com->init();
-	client->send_read_03(MB_BROADCAST_ADDR,0,79);
-	uint16_t reg76=0;
+	COMPort *com = new COMPort;
+	com->alias = "/dev/ttyACM0";
+	com->init();
+	//std::vector<uint8_t> buf = client->build_read_03(MB_BROADCAST_ADDR,0,79);
+	/*uint16_t reg76=0;
 	for(int i = 0; i < 79; i++)
 	{
 		uint16_t reg = *(uint16_t*)&client->rbuf[3+i*2];
@@ -41,7 +41,7 @@ int main(int argc, char* argv[])
 	std::map<int,string>::iterator iter = StateStrMap.find(reg76);
 	if(iter != StateStrMap.end())
 		str = iter->second;
-	fprintf(stderr, "Firmware state is %d(%s)\n",reg76,str.c_str());
+	fprintf(stderr, "Firmware state is %d(%s)\n",reg76,str.c_str());*/
 	return 0;
 }
 //----------------------------------------------------------------------------------------------------------------------

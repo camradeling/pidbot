@@ -264,9 +264,7 @@ static void prvSetupHardware( void )
   SET_PIN_LOW(GPIOB,5);
   SET_PIN_OUTPUT_PP(GPIOB,5);
   SET_PIN_HIGH(GPIOB,5);
-  //usb pins
-  SET_PIN_INPUT(USBDM_PORT,USBDM);
-  SET_PIN_INPUT(USBDP_PORT,USBDP);
+  
   //coil pins
   SET_PIN_LOW(GPIOB,15);//coil 1
   SET_PIN_OUTPUT_PP(GPIOB,15);

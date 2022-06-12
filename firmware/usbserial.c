@@ -14,6 +14,14 @@ int RxInd=0;
 void usb_device_task(void* param)
 {
   (void) param;
+  //usb pins
+  SET_PIN_LOW(USBDM_PORT,USBDM);
+  SET_PIN_LOW(USBDP_PORT,USBDP);
+  SET_PIN_OUTPUT_PP(USBDM_PORT,USBDM);
+  SET_PIN_OUTPUT_PP(USBDP_PORT,USBDP);
+  vTaskDelay(100 / portTICK_RATE_MS);
+  SET_PIN_INPUT(USBDM_PORT,USBDM);
+  SET_PIN_INPUT(USBDP_PORT,USBDP);
   // This should be called after scheduler/kernel is started.
   // Otherwise it could cause kernel issue since USB IRQ handler does use RTOS queue API.
   tusb_init();
